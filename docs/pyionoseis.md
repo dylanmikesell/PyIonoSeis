@@ -1,0 +1,4 @@
+ 
+# pyionoseis module
+
+::: pyionoseis.pyionoseis
