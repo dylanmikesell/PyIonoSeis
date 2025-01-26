@@ -6,7 +6,7 @@ dynamic = [
 ]
 description = "A python package for modeling and anlaysis of coseismic ionospheric disturbances"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 keywords = [
     "pyionoseis",
 ]
@@ -20,7 +20,7 @@ classifiers = [
     "Natural Language :: English",
     # "Programming Language :: Python :: 3.8",
     # "Programming Language :: Python :: 3.9",
-    # "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]

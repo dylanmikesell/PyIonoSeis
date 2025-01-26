@@ -84,4 +84,4 @@ nav:
     - API Reference:
           - pyionoseis module: pyionoseis.md
           - common module: common.md
-          - model module: model.md
+        #   - model module: model.md

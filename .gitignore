@@ -89,6 +89,7 @@ celerybeat-schedule
 .venv
 venv/
 ENV/
+pyionoseis-dev/
 
 # Spyder project settings
 .spyderproject
@@ -108,6 +109,8 @@ ENV/
 
 # Old code files on ODIN for Dylan development
 old/
+site/
 
 pyionoseis/iri2020*
 pypi_token.txt
+dylan-notes.txt

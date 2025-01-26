@@ -61,9 +61,16 @@ Ready to contribute? Here's how to set up pyionoseis for local development.
     local development:
 
     ```shell
-    $ mkvirtualenv pyionoseis
-    $ cd pyionoseis/
-    $ python setup.py develop
+    $ python -m venv pyionoseis-dev
+    $ source pyionoseis-dev/bin/activate
+    $ pip install -r requirements_dev.txt
+    $ pip install -e .
+    ```
+    
+    On Windows activate with this instead
+
+    ```shell
+    pyionoseis-dev\Scripts\activate
     ```
 
 4.  Create a branch for local development:
@@ -103,6 +110,6 @@ Before you submit a pull request, check that it meets these guidelines:
 2.  If the pull request adds functionality, the docs should be updated.
     Put your new functionality into a function with a docstring, and add
     the feature to the list in README.rst.
-3.  The pull request should work for Python 3.8 and later, and
+3.  The pull request should work for Python 3.10 and later, and
     for PyPy. Check <https://github.com/dylanmikesell/pyionoseis/pull_requests> and make sure that the tests pass for all
     supported Python versions.
