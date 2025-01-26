@@ -8,6 +8,89 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 class Model3D:
+    """
+    A class to represent a 3D model for ionospheric studies.
+    Attributes:
+    -----------
+    name : str
+        The name of the model.
+    radius : float
+        The radius of the model in kilometers.
+    height : float
+        The height of the model in kilometers.
+    winds : bool
+        A flag indicating if winds are considered in the model.
+    grid_spacing : float
+        The spacing of the grid in degrees.
+    height_spacing : float
+        The spacing of the height levels in kilometers.
+    source : object
+        The source object associated with the model.
+    grid : xarray.DataArray
+        The 3D grid of the model.
+    lat_extent : tuple
+        The latitude extent of the grid.
+    lon_extent : tuple
+        The longitude extent of the grid.
+    Methods:
+    --------
+    __init__(self, toml_file=None):
+        Initialize the Model3D instance.
+        Parameters:
+        -----------
+        toml_file : str, optional
+            The path to a TOML file to load model parameters from.
+    load_from_toml(self, toml_file):
+        Load model parameters from a TOML file.
+        Parameters:
+        -----------
+        toml_file : str
+            The path to the TOML file.
+    assign_source(self, source):
+        Assign a source to the model.
+        Parameters:
+        -----------
+        source : object
+            The source object to be assigned to the model.
+    __str__(self):
+        Return a string representation of the model.
+        Returns:
+        --------
+        str
+            A string describing the model.
+    print_info(self):
+        Print the model information.
+    make_3Dgrid(self):
+        Create a 3D grid with the given source and model parameters.
+        Raises:
+        -------
+        AttributeError
+            If the source is not assigned to the model.
+    plot(self):
+        Plot the source location on a map.
+        Raises:
+        -------
+        AttributeError
+            If the source is not assigned to the model.
+        ValueError
+            If the source does not have 'latitude' and 'longitude' attributes.
+    plot_grid(self, show_gridlines=False):
+        Plot the 2D grid points on a map.
+        Parameters:
+        -----------
+        show_gridlines : bool, optional
+            Whether to show gridlines on the plot. Default is False.
+        Raises:
+        -------
+        AttributeError
+            If the 3D grid is not created.
+    plot_grid_3d(self):
+        Plot the 3D grid points.
+        Raises:
+        -------
+        AttributeError
+            If the 3D grid is not created.
+    """
     pass
     def __init__(self, toml_file=None):
         if toml_file:
@@ -181,5 +264,28 @@ class Model3D:
             ax.gridlines(draw_labels=True)
         
         plt.title("Lat/Lon Grid Points")
+        
+        plt.show()
+
+    def plot_grid_3d(self):
+        if not hasattr(self, 'grid'):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+        
+        latitudes = self.grid.coords['latitude'].values
+        longitudes = self.grid.coords['longitude'].values
+        altitudes = self.grid.coords['altitude'].values
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        
+        lat_grid, lon_grid, alt_grid = np.meshgrid(latitudes, longitudes, altitudes, indexing='ij')
+        
+        ax.scatter(lon_grid, lat_grid, alt_grid, c='k', marker='o', s=1)
+        
+        ax.set_xlabel('Longitude (deg)')
+        ax.set_ylabel('Latitude (deg)')
+        ax.set_zlabel('Altitude (km)')
+        
+        plt.title("3D Grid Points")
         
         plt.show()

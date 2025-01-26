@@ -110,3 +110,4 @@ ENV/
 old/
 
 pyionoseis/iri2020*
+pypi_token.txt

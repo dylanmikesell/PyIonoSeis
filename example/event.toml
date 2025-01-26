@@ -9,6 +9,6 @@ name = "example"
 radius = 500.0  # (km) epicentral distance
 height = 500.0  # (km) height of the model in the atmosphere
 winds = false  # include winds in the model (default: false)
-grid_spacing = 0.5  # grid spacing of the model (default: 1.0 degrees)
+grid_spacing = 1.0  # grid spacing of the model (default: 1.0 degrees)
 grid_units = "degrees"  # units of the grid spacing (degrees/km)
 height_spacing = 50.0  # (km) height grid spacing (default: 20.0)
