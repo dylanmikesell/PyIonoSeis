@@ -12,10 +12,8 @@
         <meta name="author" content="dylanmikesell">
       
       
-        <link rel="canonical" href="https://dylanmikesell.github.io/pyionoseis/common/">
+        <link rel="canonical" href="https://dylanmikesell.github.io/pyionoseis/model/">
       
-      
-        <link rel="prev" href="../pyionoseis/">
       
       
       
@@ -24,7 +22,7 @@
     
     
       
-        <title>common module - pyionoseis</title>
+        <title>Model - pyionoseis</title>
       
     
     
@@ -79,11 +77,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#common-module" class="md-skip">
-          Skip to content
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -116,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              common module
+              Model
             
           </span>
         </div>
@@ -464,19 +457,17 @@
       
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
           <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
@@ -490,7 +481,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             API Reference
@@ -522,30 +513,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    common module
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../common/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -554,44 +525,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#pyionoseis.common" class="md-nav__link">
-    <span class="md-ellipsis">
-      pyionoseis.common
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pyionoseis.common.hello_world" class="md-nav__link">
-    <span class="md-ellipsis">
-      hello_world()
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -621,34 +554,6 @@
   
   
   
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#pyionoseis.common" class="md-nav__link">
-    <span class="md-ellipsis">
-      pyionoseis.common
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pyionoseis.common.hello_world" class="md-nav__link">
-    <span class="md-ellipsis">
-      hello_world()
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -669,63 +574,56 @@
   
 
 
-<h1 id="common-module">common module<a class="headerlink" href="#common-module" title="Permanent link">&para;</a></h1>
+  <h1>Model</h1>
 
+<!-- # Model Module
 
-  <div class="doc doc-object doc-module">
+This section provides documentation for the `model.py` module.
 
-<a id="pyionoseis.common"></a>
-    <div class="doc doc-contents first">
+## Classes
 
-      <p>The common module contains common functions and classes used by the other modules.</p>
+### `Model3D`
 
+::: pyionoseis.model.Model3D -->
 
+<!-- 
+# Model Module
 
-  <div class="doc doc-children">
+This section provides documentation for the `model.py` module.
 
+## Classes
 
+### `Model3D`
 
+```python
+class Model3D:
+    """
+    A class to represent a 3D model.
 
+    Attributes:
+        attr1 (type): Description of attr1.
+        attr2 (type): Description of attr2.
+    """
 
+    def __init__(self, param1, param2):
+        """
+        Constructs all the necessary attributes for the Model3D object.
 
+        Args:
+            param1 (type): Description of param1.
+            param2 (type): Description of param2.
+        """
+        self.attr1 = param1
+        self.attr2 = param2
 
+    def plot_grid(self, show_gridlines=True):
+        """
+        Plots the grid.
 
-  <div class="doc doc-object doc-function">
-
-
-
-<h2 id="pyionoseis.common.hello_world" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">hello_world</span><span class="p">()</span></code>
-
-
-<a href="#pyionoseis.common.hello_world" class="headerlink" title="Permanent link">&para;</a></h2>
-
-    <div class="doc doc-contents ">
-
-      <p>Prints "Hello World!" to the console.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>pyionoseis/common.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">hello_world</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prints &quot;Hello World!&quot; to the console.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Hello World!&quot;</span><span class="p">)</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-  </div>
+        Args:
+            show_gridlines (bool): Whether to show gridlines.
+        """
+        pass -->
 
 
 
@@ -758,7 +656,7 @@
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2025-01-25T16:14:09+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2025-01-25</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2025-01-26T10:40:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2025-01-26</span>
   </span>
 
     
