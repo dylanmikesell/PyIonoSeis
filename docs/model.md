@@ -1,0 +1,3 @@
+# Model Documentation
+
+::: pyionoseis.model

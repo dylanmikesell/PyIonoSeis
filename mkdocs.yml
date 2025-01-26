@@ -4,7 +4,7 @@ site_author: dylanmikesell
 site_url: https://dylanmikesell.github.io/pyionoseis
 repo_url: https://github.com/dylanmikesell/pyionoseis
 
-copyright: "Copyright &copy; 2024 - 2024 Dylan Mikesell"
+copyright: "Copyright &copy; 2024 - 2025 Dylan Mikesell"
 
 theme:
     palette:
@@ -84,3 +84,4 @@ nav:
     - API Reference:
           - pyionoseis module: pyionoseis.md
           - common module: common.md
+          - model module: model.md

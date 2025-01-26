@@ -108,3 +108,5 @@ ENV/
 
 # Old code files on ODIN for Dylan development
 old/
+
+pyionoseis/iri2020*
