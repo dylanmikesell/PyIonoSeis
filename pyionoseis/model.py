@@ -1,3 +1,6 @@
+"""The model module contains common functions and classes used to generate the spatial modes.
+"""
+
 import toml
 import xarray as xr
 import numpy as np

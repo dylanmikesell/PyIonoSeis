@@ -2,3 +2,4 @@ numpy
 toml
 cartopy
 click
+msise00

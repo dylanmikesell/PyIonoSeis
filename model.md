@@ -1,3 +1,0 @@
-# model module
-
-::: pyionoseis.model
