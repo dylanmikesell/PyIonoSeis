@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from pyionoseis.atmosphere import Atmosphere1D
 
 class Model3D:
     """
@@ -106,6 +107,7 @@ class Model3D:
             self.grid_spacing = 1.0
             self.height_spacing = 20.0 
             self.source = None
+            self.atmosphere = None
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -114,25 +116,41 @@ class Model3D:
         self.radius = model.get('radius', 100.0)
         self.height = model.get('height', 500.0)
         self.winds = model.get('winds', False)
+        self.atmosphere_model = model.get('atmosphere', "msise00")
         self.grid_spacing = model.get('grid_spacing', 1.0)
         units = model.get('grid_units')
         if units == "km":
             self.grid_spacing = self.grid_spacing / 111.32  # 1 degree is approximately 111.32 km at the equator
         self.height_spacing = model.get('height_spacing', 20.0) 
-                        
+        
+
     def assign_source(self, source):
         if hasattr(self, 'source') and self.source is not None:
             print("Source already exists and will be updated.")
         self.source = source
 
+    def assign_atmosphere(self):
+        if not hasattr(self, 'source'):
+            raise AttributeError("Source not assigned to the model.")
+        if not hasattr(self, 'grid'):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+        
+        self.atmosphere = Atmosphere1D(self.source.get_latitude(),
+                                  self.source.get_longitude(), 
+                                  self.grid.coords['altitude'].values, 
+                                  self.source.get_time(), 
+                                  self.atmosphere_model)
+
+
         
     def __str__(self):
-        source_info = f"latitude={self.source.get_latitude()}, longitude={self.source.get_longitude()}" if hasattr(self, 'source') else "None"
-        lat_extent_info = f"lat_extent={self.lat_extent}" if hasattr(self, 'lat_extent') else ""
-        lon_extent_info = f"lon_extent={self.lon_extent}" if hasattr(self, 'lon_extent') else ""
-        return (f"Model3D: name={self.name}, radius={self.radius} (km), height={self.height} (km), "
-                f"winds={self.winds}, grid_spacing={self.grid_spacing} (deg), height_spacing={self.height_spacing} (km), "
-                f"source={source_info} {lat_extent_info} {lon_extent_info}")
+        source_info = f"latitude = {self.source.get_latitude():.2f} (deg), longitude={self.source.get_longitude():.2f} (deg)" if hasattr(self, 'source') else "None"
+        lat_extent_info = f"lat_extent = ({self.lat_extent[0]:.2f}, {self.lat_extent[1]:.2f})" if hasattr(self, 'lat_extent') else ""
+        lon_extent_info = f"lon_extent = ({self.lon_extent[0]:.2f}, {self.lon_extent[1]:.2f})" if hasattr(self, 'lon_extent') else ""
+        atmosphere_info = f"atmosphere_model = {self.atmosphere_model}" if hasattr(self, 'atmosphere_model') else ""
+        return (f"Model3D: name = {self.name}\n radius = {self.radius} (km)\n height = {self.height} (km)\n"
+                f" winds = {self.winds}\n {atmosphere_info}\n grid_spacing = {self.grid_spacing} (deg)\n height_spacing = {self.height_spacing} (km)\n"
+                f" source: {source_info}\n {lat_extent_info}\n {lon_extent_info}")
 
     def print_info(self):
         print(self)
@@ -164,7 +182,7 @@ class Model3D:
         self.lon_extent = (longitudes[0], longitudes[-1])
 
 
-    def plot(self):
+    def plot_source(self):
         if not hasattr(self, 'source'):
             raise AttributeError("Source not assigned to the model.")
         

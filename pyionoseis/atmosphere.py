@@ -4,6 +4,7 @@ A module for the atmosphere class. This class is used to generate the atmospheri
 
 import msise00
 import numpy as np
+import xarray as xr
 import matplotlib.pyplot as plt
 
 '''
@@ -68,12 +69,12 @@ class Atmosphere1D:
         various atmospheric parameters such as density, pressure, and velocity.
     '''
     pass
-    def __init__(self, glat, glon, alt_km, time, model="msise00"):
+    def __init__(self, lat, lon, alt_km, time, model="msise00"):
         if model != "msise00":
             raise ValueError("Invalid model. Only 'msise00' is supported.")
         self.model = model
-        self.lat = glat
-        self.lon = glon
+        self.lat = lat
+        self.lon = lon
         self.alt_km = alt_km
         self.time = time
 
@@ -81,6 +82,7 @@ class Atmosphere1D:
             self.compute_mise00_model()  # get the atmospheric parameters
         
     def __str__(self):
+        # ToDo: fix the string representation after merging all atmosphere parameters into one xarray Dataset
         return (f"Atmosphere1D Model: {self.model}\n"
                 f"Latitude (deg): {self.lat}\n"
                 f"Longitude (deg): {self.lon}\n"
@@ -88,9 +90,10 @@ class Atmosphere1D:
                 f"Time: {self.time}\n"
                 f"F107: {self.f107}\n"
                 f"Ap: {self.Ap}\n"
-                f"Density (kg/m^3): {self.density_kg_m3}\n"
-                f"Pressure (Pa): {self.pressure_pa}\n"
-                f"Velocity (km/s): {self.velocity}")
+                # f"Density (kg/m^3): {self.atmosphere["density"]}\n"
+                # f"Pressure (Pa): {self.atmosphere["pressure"]}\n"
+                # f"Velocity (km/s): {self.atmosphere["velocity"]}"
+                )
 
     def print(self):
         print(self.__str__())
@@ -122,9 +125,6 @@ class Atmosphere1D:
         # Missing density values are returned as 9.999e-38
         atmos = msise00.run(self.time, self.alt_km, self.lat, self.lon)
 
-        # save the density in kg/m^3
-        self.density_kg_m3 = atmos["Total"].squeeze()
-        self.temperature_k = atmos["Tn"].squeeze()
         # F107 and F107A values are the 10.7 cm radio flux at the Sun-Earth distance, not the radio flux at 1 AU.
 
         # Daily F10.7 for previous day
@@ -140,7 +140,8 @@ class Atmosphere1D:
                 40.*atmos["Ar"].squeeze() + 
                 1.*atmos["H"].squeeze() + 
                 14.*atmos["N"].squeeze()) / AVO  # g/cm^3
-        self.pressure_pa = (atmos["He"].squeeze() + 
+        
+        pressure = (atmos["He"].squeeze() + 
             atmos["O"].squeeze() + 
             atmos["N2"].squeeze() + 
             atmos["O2"].squeeze() + 
@@ -166,34 +167,52 @@ class Atmosphere1D:
         cv = 1.5*R*mono + 2.5*R*bi
         cp = cv + R
         gamma = cp / cv  # heat capacity ratio
-        self.velocity = np.sqrt( gamma*self.pressure_pa/density2/1000.) / 1000.  # km/s
+        
+        velocity = np.sqrt( gamma*pressure/density2/1000.) / 1000.  # km/s
+        density_kg_m3 = atmos["Total"].squeeze()  # kg/m^3
+        temperature_k = atmos["Tn"].squeeze()  # K
 
+        # Create a new xarray Dataset for the 1D atmosphere model
+        self.atmosphere = xr.Dataset(
+            {
+            "velocity": (["altitude"], velocity.values),  # km/s
+            "density": (["altitude"], density_kg_m3.values),  # kg/m^3,
+            "pressure": (["altitude"], pressure.values),  # Pa
+            "temperature": (["altitude"], temperature_k.values)  # K
+            },
+            coords={
+            "altitude": self.alt_km,
+            "latitude": self.lat,
+            "longitude": self.lon,
+            "time": self.time
+            }
+        )
 
     def plot(self):
         fig, axs = plt.subplots(1, 4, figsize=(24, 6))
         
         # Plot density
-        axs[0].plot(self.density_kg_m3, self.alt_km)
+        axs[0].plot(self.atmosphere["density"], self.alt_km)
         axs[0].set_xscale('log')
         axs[0].set_xlabel('Density (kg/m^3)')
         axs[0].set_ylabel('Altitude (km)')
         axs[0].grid(True)
         
         # Plot pressure
-        axs[1].plot(self.pressure_pa, self.alt_km)
+        axs[1].plot(self.atmosphere["pressure"], self.alt_km)
         axs[1].set_xscale('log')
         axs[1].set_xlabel('Pressure (Pa)')
         axs[1].set_ylabel('Altitude (km)')
         axs[1].grid(True)
         
         # Plot velocity
-        axs[2].plot(self.velocity, self.alt_km)
+        axs[2].plot(self.atmosphere["velocity"], self.alt_km)
         axs[2].set_xlabel('Velocity (km/s)')
         axs[2].set_ylabel('Altitude (km)')
         axs[2].grid(True)
         
         # Plot temperature
-        axs[3].plot(self.temperature_k, self.alt_km)
+        axs[3].plot(self.atmosphere["temperature"], self.alt_km)
         axs[3].set_xlabel('Temperature (K)')
         axs[3].set_ylabel('Altitude (km)')
         axs[3].grid(True)

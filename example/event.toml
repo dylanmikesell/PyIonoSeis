@@ -1,5 +1,5 @@
 [event]
-time = "2023-10-01T12:34:56Z"
+time = "2023-10-01T12:34:56Z"  # event time in ISO 8601 format
 latitude = 37.7749
 longitude = -122.4194
 depth = 10.0
@@ -9,6 +9,7 @@ name = "example"
 radius = 500.0  # (km) epicentral distance
 height = 500.0  # (km) height of the model in the atmosphere
 winds = false  # include winds in the model (default: false)
+atmosphere = "msise00"  # atmospheric model to use (default: "msise00")
 grid_spacing = 1.0  # grid spacing of the model (default: 1.0 degrees)
 grid_units = "degrees"  # units of the grid spacing (degrees/km)
 height_spacing = 50.0  # (km) height grid spacing (default: 20.0)
