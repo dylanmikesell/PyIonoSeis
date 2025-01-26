@@ -1,4 +1,4 @@
-# Welcome to pyionoseis
+# Welcome to PyIonoSeis
 
 
 [![image](https://img.shields.io/pypi/v/pyionoseis.svg)](https://pypi.python.org/pypi/pyionoseis)
