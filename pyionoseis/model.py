@@ -11,6 +11,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.ionosphere import Ionosphere1D
+from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
 
 class Model3D:
     """
@@ -269,6 +270,140 @@ class Model3D:
         
         # Store ionosphere model info
         self.ionosphere_model = ionosphere_model
+        
+    def assign_magnetic_field(self, magnetic_field_model="igrf"):
+        """
+        Assign magnetic field parameters to all points in the 3D model domain.
+        
+        This method computes magnetic field components (Be, Bn, Bu) and derived
+        parameters (inclination, declination) at each grid point using the
+        specified magnetic field model.
+        
+        Parameters:
+        -----------
+        magnetic_field_model : str
+            The magnetic field model to use. Currently supports:
+            - "igrf": International Geomagnetic Reference Field model (default)
+            
+        Raises:
+        -------
+        AttributeError
+            If source is not assigned to the model or 3D grid is not created.
+        ValueError
+            If an unsupported magnetic field model is specified.
+            
+        Notes:
+        ------
+        The magnetic field components are computed at each grid point and stored in the
+        grid Dataset. The following variables are added:
+        - 'Be': East component of magnetic field (nT)
+        - 'Bn': North component of magnetic field (nT) 
+        - 'Bu': Up component of magnetic field (nT)
+        - 'inclination': Magnetic inclination angle (degrees)
+        - 'declination': Magnetic declination angle (degrees)
+        
+        The computation strategy:
+        1. For each unique lat-lon pair in the 3D grid
+        2. Compute magnetic field profile using specified model
+        3. Assign computed values to all altitude levels at that location
+        """
+        if not hasattr(self, 'source'):
+            raise AttributeError("Source not assigned to the model.")
+        if not hasattr(self, 'grid'):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+        
+        if magnetic_field_model.lower() != "igrf":
+            raise ValueError(f"Unsupported magnetic field model: {magnetic_field_model}")
+            
+        if not PPIGRF_AVAILABLE:
+            raise ImportError("ppigrf package is not available. Please install it with: pip install ppigrf")
+        
+        print(f"Computing magnetic field using {magnetic_field_model}...")
+        
+        # Get grid dimensions
+        latitudes = self.grid.coords['latitude'].values
+        longitudes = self.grid.coords['longitude'].values
+        altitudes = self.grid.coords['altitude'].values
+        
+        print(f"Grid dimensions: {len(latitudes)} lat × {len(longitudes)} lon × {len(altitudes)} alt")
+        
+        # Initialize 3D arrays for magnetic field parameters
+        Be_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        Bn_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        Bu_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        inclination_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        declination_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        
+        # Compute magnetic field for each lat-lon pair
+        total_profiles = len(latitudes) * len(longitudes)
+        computed_profiles = 0
+        
+        for i, lat in enumerate(latitudes):
+            for j, lon in enumerate(longitudes):
+                try:
+                    # Create magnetic field model for this location
+                    mag_field = MagneticField1D(lat, lon, altitudes, self.source.get_time(), magnetic_field_model)
+                    
+                    # Extract computed parameters
+                    Be_profile = mag_field.magnetic_field['Be'].values
+                    Bn_profile = mag_field.magnetic_field['Bn'].values
+                    Bu_profile = mag_field.magnetic_field['Bu'].values
+                    inc_profile = mag_field.magnetic_field['inclination'].values
+                    dec_profile = mag_field.magnetic_field['declination'].values
+                    
+                    # Assign to 3D grids
+                    Be_3d[i, j, :] = Be_profile
+                    Bn_3d[i, j, :] = Bn_profile
+                    Bu_3d[i, j, :] = Bu_profile
+                    inclination_3d[i, j, :] = inc_profile
+                    declination_3d[i, j, :] = dec_profile
+                    
+                    computed_profiles += 1
+                    
+                except Exception as e:
+                    print(f"Warning: Failed to compute magnetic field at lat={lat:.2f}, lon={lon:.2f}: {e}")
+                    # NaN values are already assigned above
+                    
+                # Progress reporting
+                if computed_profiles % max(1, total_profiles // 10) == 0:
+                    progress = int(100 * computed_profiles / total_profiles)
+                    print(f"  Progress: {computed_profiles}/{total_profiles} ({progress}%) profiles computed")
+        
+        print("Magnetic field computation completed.")
+        
+        # Add magnetic field parameters to the grid Dataset
+        if isinstance(self.grid, xr.DataArray):
+            # Convert to Dataset with the original data as 'grid_points'
+            grid_dataset = self.grid.to_dataset(name='grid_points')
+            # Add magnetic field variables
+            grid_dataset['Be'] = (["latitude", "longitude", "altitude"], Be_3d)
+            grid_dataset['Bn'] = (["latitude", "longitude", "altitude"], Bn_3d)
+            grid_dataset['Bu'] = (["latitude", "longitude", "altitude"], Bu_3d)
+            grid_dataset['inclination'] = (["latitude", "longitude", "altitude"], inclination_3d)
+            grid_dataset['declination'] = (["latitude", "longitude", "altitude"], declination_3d)
+            self.grid = grid_dataset
+        else:
+            # If already a Dataset, add new variables
+            self.grid['Be'] = (["latitude", "longitude", "altitude"], Be_3d)
+            self.grid['Bn'] = (["latitude", "longitude", "altitude"], Bn_3d)
+            self.grid['Bu'] = (["latitude", "longitude", "altitude"], Bu_3d)
+            self.grid['inclination'] = (["latitude", "longitude", "altitude"], inclination_3d)
+            self.grid['declination'] = (["latitude", "longitude", "altitude"], declination_3d)
+        
+        # Update grid attributes
+        if not hasattr(self.grid, 'attrs'):
+            self.grid.attrs = {}
+        self.grid.attrs['magnetic_field_model'] = magnetic_field_model
+        self.grid.attrs['magnetic_field_units'] = 'nT'
+        self.grid.attrs['magnetic_angle_units'] = 'degrees'
+        self.grid.attrs['Be_description'] = f'East component of magnetic field from {magnetic_field_model} model'
+        self.grid.attrs['Bn_description'] = f'North component of magnetic field from {magnetic_field_model} model'
+        self.grid.attrs['Bu_description'] = f'Up component of magnetic field from {magnetic_field_model} model'
+        self.grid.attrs['inclination_description'] = f'Magnetic inclination from {magnetic_field_model} model'
+        self.grid.attrs['declination_description'] = f'Magnetic declination from {magnetic_field_model} model'
+        
+        # Store magnetic field model info
+        self.magnetic_field_model = magnetic_field_model
 
 
         
@@ -454,6 +589,11 @@ class Model3D:
             The variable to plot. Options:
             - 'grid_points': Plot grid points only (default)
             - 'electron_density': Plot electron density (requires assign_ionosphere)
+            - 'Be': Plot east magnetic field component (requires assign_magnetic_field)
+            - 'Bn': Plot north magnetic field component (requires assign_magnetic_field)
+            - 'Bu': Plot up magnetic field component (requires assign_magnetic_field)
+            - 'inclination': Plot magnetic inclination (requires assign_magnetic_field)
+            - 'declination': Plot magnetic declination (requires assign_magnetic_field)
             - 'density': Plot atmospheric density (requires assign_atmosphere)
             - 'pressure': Plot atmospheric pressure (requires assign_atmosphere)
             - 'velocity': Plot atmospheric velocity (requires assign_atmosphere)
@@ -472,7 +612,10 @@ class Model3D:
         # Plot electron density at 300 km altitude
         model.plot_variable('electron_density', altitude_slice=300)
         
-        # Plot electron density profile at source location
+        # Plot magnetic inclination at 100 km altitude
+        model.plot_variable('inclination', altitude_slice=100)
+        
+        # Plot vertical profile at source location
         model.plot_variable('electron_density')
         """
         if not hasattr(self, 'grid'):
@@ -488,11 +631,14 @@ class Model3D:
         elif variable == 'electron_density':
             self._plot_electron_density(altitude_slice, **kwargs)
             
+        elif variable in ['Be', 'Bn', 'Bu', 'inclination', 'declination']:
+            self._plot_magnetic_field_variable(variable, altitude_slice, **kwargs)
+            
         elif variable in ['density', 'pressure', 'velocity', 'temperature']:
             self._plot_atmospheric_variable(variable, altitude_slice, **kwargs)
             
         else:
-            available_vars = ['grid_points', 'electron_density', 'density', 'pressure', 'velocity', 'temperature']
+            available_vars = ['grid_points', 'electron_density', 'Be', 'Bn', 'Bu', 'inclination', 'declination', 'density', 'pressure', 'velocity', 'temperature']
             raise ValueError(f"Unknown variable '{variable}'. Available variables: {available_vars}")
     
     def _plot_electron_density(self, altitude_slice=None, **kwargs):
@@ -548,6 +694,35 @@ class Model3D:
         
         plt.tight_layout()
         plt.show()
+    
+    def _plot_magnetic_field_variable(self, variable, altitude_slice=None, **kwargs):
+        """Plot magnetic field variables."""
+        if variable not in self.grid.data_vars:
+            raise AttributeError(f"Magnetic field variable '{variable}' not computed. Call assign_magnetic_field() first.")
+        
+        # Define variable properties
+        var_properties = {
+            'Be': {'title': 'East Magnetic Field Component', 'units': 'nT', 'log_scale': False},
+            'Bn': {'title': 'North Magnetic Field Component', 'units': 'nT', 'log_scale': False},
+            'Bu': {'title': 'Up Magnetic Field Component', 'units': 'nT', 'log_scale': False},
+            'inclination': {'title': 'Magnetic Inclination', 'units': 'degrees', 'log_scale': False},
+            'declination': {'title': 'Magnetic Declination', 'units': 'degrees', 'log_scale': False}
+        }
+        
+        props = var_properties.get(variable, {'title': variable.title(), 'units': '', 'log_scale': False})
+        
+        if altitude_slice is not None:
+            # Plot 2D map at specified altitude
+            self._plot_2d_map(variable, altitude_slice, 
+                            title_prefix=props['title'], 
+                            units=props['units'], 
+                            log_scale=props['log_scale'], **kwargs)
+        else:
+            # Plot vertical profile at source location
+            self._plot_vertical_profile(variable, 
+                                      title_prefix=props['title'],
+                                      units=props['units'], 
+                                      log_scale=props['log_scale'], **kwargs)
     
     def _plot_2d_map(self, variable, altitude, title_prefix, units, log_scale=False, **kwargs):
         """Plot 2D map of a variable at specified altitude."""
