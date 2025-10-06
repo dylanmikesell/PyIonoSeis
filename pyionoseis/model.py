@@ -296,9 +296,18 @@ class Model3D:
         ------
         The magnetic field components are computed at each grid point and stored in the
         grid Dataset. The following variables are added:
+        
+        Geodetic components (tangent to Earth's ellipsoid):
         - 'Be': East component of magnetic field (nT)
         - 'Bn': North component of magnetic field (nT) 
         - 'Bu': Up component of magnetic field (nT)
+        
+        Geocentric components (spherical coordinates):
+        - 'Br': Radial component of magnetic field (nT)
+        - 'Btheta': Colatitude component of magnetic field (nT)
+        - 'Bphi': Azimuth component of magnetic field (nT)
+        
+        Derived parameters:
         - 'inclination': Magnetic inclination angle (degrees)
         - 'declination': Magnetic declination angle (degrees)
         
@@ -331,8 +340,13 @@ class Model3D:
         Be_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
         Bn_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
         Bu_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        Br_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        Btheta_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        Bphi_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
         inclination_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
         declination_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        total_field_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+        horizontal_intensity_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
         
         # Compute magnetic field for each lat-lon pair
         total_profiles = len(latitudes) * len(longitudes)
@@ -348,15 +362,25 @@ class Model3D:
                     Be_profile = mag_field.magnetic_field['Be'].values
                     Bn_profile = mag_field.magnetic_field['Bn'].values
                     Bu_profile = mag_field.magnetic_field['Bu'].values
+                    Br_profile = mag_field.magnetic_field['Br'].values
+                    Btheta_profile = mag_field.magnetic_field['Btheta'].values
+                    Bphi_profile = mag_field.magnetic_field['Bphi'].values
                     inc_profile = mag_field.magnetic_field['inclination'].values
                     dec_profile = mag_field.magnetic_field['declination'].values
+                    total_field_profile = mag_field.magnetic_field['total_field'].values
+                    horizontal_intensity_profile = mag_field.magnetic_field['horizontal_intensity'].values
                     
                     # Assign to 3D grids
                     Be_3d[i, j, :] = Be_profile
                     Bn_3d[i, j, :] = Bn_profile
                     Bu_3d[i, j, :] = Bu_profile
+                    Br_3d[i, j, :] = Br_profile
+                    Btheta_3d[i, j, :] = Btheta_profile
+                    Bphi_3d[i, j, :] = Bphi_profile
                     inclination_3d[i, j, :] = inc_profile
                     declination_3d[i, j, :] = dec_profile
+                    total_field_3d[i, j, :] = total_field_profile
+                    horizontal_intensity_3d[i, j, :] = horizontal_intensity_profile
                     
                     computed_profiles += 1
                     
@@ -379,16 +403,26 @@ class Model3D:
             grid_dataset['Be'] = (["latitude", "longitude", "altitude"], Be_3d)
             grid_dataset['Bn'] = (["latitude", "longitude", "altitude"], Bn_3d)
             grid_dataset['Bu'] = (["latitude", "longitude", "altitude"], Bu_3d)
+            grid_dataset['Br'] = (["latitude", "longitude", "altitude"], Br_3d)
+            grid_dataset['Btheta'] = (["latitude", "longitude", "altitude"], Btheta_3d)
+            grid_dataset['Bphi'] = (["latitude", "longitude", "altitude"], Bphi_3d)
             grid_dataset['inclination'] = (["latitude", "longitude", "altitude"], inclination_3d)
             grid_dataset['declination'] = (["latitude", "longitude", "altitude"], declination_3d)
+            grid_dataset['total_field'] = (["latitude", "longitude", "altitude"], total_field_3d)
+            grid_dataset['horizontal_intensity'] = (["latitude", "longitude", "altitude"], horizontal_intensity_3d)
             self.grid = grid_dataset
         else:
             # If already a Dataset, add new variables
             self.grid['Be'] = (["latitude", "longitude", "altitude"], Be_3d)
             self.grid['Bn'] = (["latitude", "longitude", "altitude"], Bn_3d)
             self.grid['Bu'] = (["latitude", "longitude", "altitude"], Bu_3d)
+            self.grid['Br'] = (["latitude", "longitude", "altitude"], Br_3d)
+            self.grid['Btheta'] = (["latitude", "longitude", "altitude"], Btheta_3d)
+            self.grid['Bphi'] = (["latitude", "longitude", "altitude"], Bphi_3d)
             self.grid['inclination'] = (["latitude", "longitude", "altitude"], inclination_3d)
             self.grid['declination'] = (["latitude", "longitude", "altitude"], declination_3d)
+            self.grid['total_field'] = (["latitude", "longitude", "altitude"], total_field_3d)
+            self.grid['horizontal_intensity'] = (["latitude", "longitude", "altitude"], horizontal_intensity_3d)
         
         # Update grid attributes
         if not hasattr(self.grid, 'attrs'):
@@ -399,6 +433,9 @@ class Model3D:
         self.grid.attrs['Be_description'] = f'East component of magnetic field from {magnetic_field_model} model'
         self.grid.attrs['Bn_description'] = f'North component of magnetic field from {magnetic_field_model} model'
         self.grid.attrs['Bu_description'] = f'Up component of magnetic field from {magnetic_field_model} model'
+        self.grid.attrs['Br_description'] = f'Radial component of magnetic field from {magnetic_field_model} model (geocentric)'
+        self.grid.attrs['Btheta_description'] = f'Colatitude component of magnetic field from {magnetic_field_model} model (geocentric)'
+        self.grid.attrs['Bphi_description'] = f'Azimuth component of magnetic field from {magnetic_field_model} model (geocentric)'
         self.grid.attrs['inclination_description'] = f'Magnetic inclination from {magnetic_field_model} model'
         self.grid.attrs['declination_description'] = f'Magnetic declination from {magnetic_field_model} model'
         
@@ -421,7 +458,197 @@ class Model3D:
         return base_info
 
     def print_info(self):
-        print(self)
+        """
+        Print comprehensive information about the Model3D object.
+        
+        This method provides detailed information about:
+        - Basic model parameters
+        - Source configuration
+        - Grid dimensions and extent
+        - Available data variables
+        - Model states (atmosphere, ionosphere, magnetic field)
+        """
+        print("=" * 80)
+        print("MODEL3D INFORMATION")
+        print("=" * 80)
+        
+        # Basic Model Information
+        print(f"Model Name: {self.name}")
+        print(f"Model Radius: {self.radius} km")
+        print(f"Model Height: {self.height} km")
+        print(f"Include Winds: {self.winds}")
+        print(f"Grid Spacing: {self.grid_spacing} degrees")
+        print(f"Height Spacing: {self.height_spacing} km")
+        
+        # Source Information
+        print("\nSOURCE INFORMATION:")
+        if hasattr(self, 'source') and self.source is not None:
+            print(f"  Latitude: {self.source.get_latitude():.4f}°")
+            print(f"  Longitude: {self.source.get_longitude():.4f}°")
+            print(f"  Time: {self.source.get_time()}")
+            if hasattr(self.source, 'get_depth'):
+                print(f"  Depth: {self.source.get_depth()} km")
+        else:
+            print("  No source assigned")
+        
+        # Grid Information
+        print("\nGRID INFORMATION:")
+        if hasattr(self, 'grid') and self.grid is not None:
+            if hasattr(self, 'lat_extent'):
+                print(f"  Latitude extent: {self.lat_extent[0]:.4f}° to {self.lat_extent[1]:.4f}°")
+            if hasattr(self, 'lon_extent'):
+                print(f"  Longitude extent: {self.lon_extent[0]:.4f}° to {self.lon_extent[1]:.4f}°")
+            
+            # Grid dimensions
+            if hasattr(self.grid, 'sizes'):
+                # This is an xarray Dataset/DataArray with sizes
+                grid_shape = self.grid.sizes
+                print(f"  Grid dimensions: {dict(grid_shape)}")
+                total_points = 1
+                for dim, size in grid_shape.items():
+                    total_points *= size
+                print(f"  Total grid points: {total_points:,}")
+            elif hasattr(self.grid, 'shape'):
+                # This is a numpy array or similar
+                grid_shape = self.grid.shape
+                print(f"  Grid shape: {grid_shape}")
+                total_points = 1
+                for dim in grid_shape:
+                    total_points *= dim
+                print(f"  Total grid points: {total_points:,}")
+            else:
+                print("  Grid shape: Unknown")
+            
+            # Coordinate ranges
+            if hasattr(self.grid, 'coords'):
+                coords = self.grid.coords
+                if 'latitude' in coords:
+                    lat_vals = coords['latitude'].values
+                    print(f"  Latitude range: {lat_vals.min():.4f}° to {lat_vals.max():.4f}° ({len(lat_vals)} points)")
+                if 'longitude' in coords:
+                    lon_vals = coords['longitude'].values
+                    print(f"  Longitude range: {lon_vals.min():.4f}° to {lon_vals.max():.4f}° ({len(lon_vals)} points)")
+                if 'altitude' in coords:
+                    alt_vals = coords['altitude'].values
+                    print(f"  Altitude range: {alt_vals.min():.1f} to {alt_vals.max():.1f} km ({len(alt_vals)} points)")
+        else:
+            print("  No grid created yet")
+        
+        # Available Data Variables
+        print("\nAVAILABLE DATA VARIABLES:")
+        if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
+            if len(self.grid.data_vars) > 0:
+                # Group variables by type
+                atmospheric_vars = []
+                ionospheric_vars = []
+                magnetic_geodetic_vars = []
+                magnetic_geocentric_vars = []
+                magnetic_derived_vars = []
+                other_vars = []
+                
+                for var in self.grid.data_vars:
+                    if var in ['density', 'pressure', 'temperature', 'velocity']:
+                        atmospheric_vars.append(var)
+                    elif var in ['electron_density']:
+                        ionospheric_vars.append(var)
+                    elif var in ['Be', 'Bn', 'Bu']:
+                        magnetic_geodetic_vars.append(var)
+                    elif var in ['Br', 'Btheta', 'Bphi']:
+                        magnetic_geocentric_vars.append(var)
+                    elif var in ['inclination', 'declination', 'total_field', 'horizontal_intensity']:
+                        magnetic_derived_vars.append(var)
+                    else:
+                        other_vars.append(var)
+                
+                if atmospheric_vars:
+                    print(f"  Atmospheric variables: {', '.join(atmospheric_vars)}")
+                if ionospheric_vars:
+                    print(f"  Ionospheric variables: {', '.join(ionospheric_vars)}")
+                if magnetic_geodetic_vars:
+                    print(f"  Magnetic field (geodetic): {', '.join(magnetic_geodetic_vars)}")
+                if magnetic_geocentric_vars:
+                    print(f"  Magnetic field (geocentric): {', '.join(magnetic_geocentric_vars)}")
+                if magnetic_derived_vars:
+                    print(f"  Magnetic field (derived): {', '.join(magnetic_derived_vars)}")
+                if other_vars:
+                    print(f"  Other variables: {', '.join(other_vars)}")
+                
+                print(f"  Total variables: {len(self.grid.data_vars)}")
+                
+                # Show variable ranges for numeric data
+                print("\n  Variable Ranges:")
+                for var in sorted(self.grid.data_vars):
+                    if var != 'grid_points':  # Skip the grid_points variable
+                        try:
+                            data = self.grid[var]
+                            if data.dtype.kind in ['f', 'i']:  # float or integer
+                                min_val = float(data.min().values)
+                                max_val = float(data.max().values)
+                                units = ""
+                                if 'nT' in str(data.attrs.get('units', '')) or var in ['Be', 'Bn', 'Bu', 'Br', 'Btheta', 'Bphi', 'total_field', 'horizontal_intensity']:
+                                    units = " nT"
+                                elif var in ['inclination', 'declination']:
+                                    units = "°"
+                                elif var in ['density']:
+                                    units = " kg/m³"
+                                elif var in ['pressure']:
+                                    units = " Pa"
+                                elif var in ['temperature']:
+                                    units = " K"
+                                elif var in ['electron_density']:
+                                    units = " /m³"
+                                print(f"    {var}: {min_val:.2f} to {max_val:.2f}{units}")
+                        except Exception:
+                            print(f"    {var}: [data present]")
+            else:
+                print("  No data variables computed yet")
+        else:
+            print("  No data variables (grid not created)")
+        
+        # Model States
+        print("\nMODEL STATES:")
+        
+        # Atmosphere model
+        if hasattr(self, 'atmosphere_model'):
+            print(f"  Atmosphere model: {self.atmosphere_model}")
+            if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
+                atm_vars = [v for v in self.grid.data_vars if v in ['density', 'pressure', 'temperature', 'velocity']]
+                print(f"    Status: {'Computed' if atm_vars else 'Not computed'}")
+                if atm_vars:
+                    print(f"    Variables: {', '.join(atm_vars)}")
+        
+        # Ionosphere model
+        if hasattr(self, 'ionosphere_model'):
+            print(f"  Ionosphere model: {self.ionosphere_model}")
+            if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
+                iono_computed = 'electron_density' in self.grid.data_vars
+                print(f"    Status: {'Computed' if iono_computed else 'Not computed'}")
+        
+        # Magnetic field model
+        if hasattr(self, 'magnetic_field_model'):
+            print(f"  Magnetic field model: {self.magnetic_field_model}")
+            if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
+                mag_vars = [v for v in self.grid.data_vars if v in ['Be', 'Bn', 'Bu', 'Br', 'Btheta', 'Bphi', 'inclination', 'declination']]
+                print(f"    Status: {'Computed' if mag_vars else 'Not computed'}")
+                if mag_vars:
+                    geodetic = [v for v in mag_vars if v in ['Be', 'Bn', 'Bu']]
+                    geocentric = [v for v in mag_vars if v in ['Br', 'Btheta', 'Bphi']]
+                    derived = [v for v in mag_vars if v in ['inclination', 'declination']]
+                    if geodetic:
+                        print(f"    Geodetic components: {', '.join(geodetic)}")
+                    if geocentric:
+                        print(f"    Geocentric components: {', '.join(geocentric)}")
+                    if derived:
+                        print(f"    Derived parameters: {', '.join(derived)}")
+        
+        # Grid attributes
+        if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'attrs') and self.grid.attrs:
+            print("\nGRID ATTRIBUTES:")
+            for key, value in self.grid.attrs.items():
+                if not key.endswith('_description'):  # Skip long description attributes
+                    print(f"  {key}: {value}")
+        
+        print("=" * 80)
 
     def make_3Dgrid(self):
         """
@@ -592,6 +819,9 @@ class Model3D:
             - 'Be': Plot east magnetic field component (requires assign_magnetic_field)
             - 'Bn': Plot north magnetic field component (requires assign_magnetic_field)
             - 'Bu': Plot up magnetic field component (requires assign_magnetic_field)
+            - 'Br': Plot radial magnetic field component (requires assign_magnetic_field)
+            - 'Btheta': Plot colatitude magnetic field component (requires assign_magnetic_field)
+            - 'Bphi': Plot azimuth magnetic field component (requires assign_magnetic_field)
             - 'inclination': Plot magnetic inclination (requires assign_magnetic_field)
             - 'declination': Plot magnetic declination (requires assign_magnetic_field)
             - 'density': Plot atmospheric density (requires assign_atmosphere)
@@ -631,7 +861,7 @@ class Model3D:
         elif variable == 'electron_density':
             self._plot_electron_density(altitude_slice, **kwargs)
             
-        elif variable in ['Be', 'Bn', 'Bu', 'inclination', 'declination']:
+        elif variable in ['Be', 'Bn', 'Bu', 'Br', 'Btheta', 'Bphi', 'inclination', 'declination']:
             self._plot_magnetic_field_variable(variable, altitude_slice, **kwargs)
             
         elif variable in ['density', 'pressure', 'velocity', 'temperature']:
@@ -705,6 +935,9 @@ class Model3D:
             'Be': {'title': 'East Magnetic Field Component', 'units': 'nT', 'log_scale': False},
             'Bn': {'title': 'North Magnetic Field Component', 'units': 'nT', 'log_scale': False},
             'Bu': {'title': 'Up Magnetic Field Component', 'units': 'nT', 'log_scale': False},
+            'Br': {'title': 'Radial Magnetic Field Component', 'units': 'nT', 'log_scale': False},
+            'Btheta': {'title': 'Colatitude Magnetic Field Component', 'units': 'nT', 'log_scale': False},
+            'Bphi': {'title': 'Azimuth Magnetic Field Component', 'units': 'nT', 'log_scale': False},
             'inclination': {'title': 'Magnetic Inclination', 'units': 'degrees', 'log_scale': False},
             'declination': {'title': 'Magnetic Declination', 'units': 'degrees', 'log_scale': False}
         }

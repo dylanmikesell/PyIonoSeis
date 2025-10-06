@@ -119,34 +119,58 @@ class MagneticField1D:
         """
         Compute the magnetic field model using the IGRF model.
         
-        This function calculates magnetic field components (Be, Bn, Bu),
-        derived parameters (inclination, declination, total field intensity),
-        using the IGRF model via ppigrf.
+        This function calculates magnetic field components and derived parameters
+        in both geodetic and geocentric coordinate systems using the IGRF model via ppigrf.
+        
+        Geodetic coordinates: Be (east), Bn (north), Bu (up) - tangent to Earth's ellipsoid
+        Geocentric coordinates: Br (radial), Btheta (south), Bphi (east) - spherical coordinates
         
         The IGRF model provides magnetic field components in nT.
         """
         if not PPIGRF_AVAILABLE:
             raise ImportError("ppigrf package is not available. Please install it with: pip install ppigrf")
         
-        # Calculate magnetic field components using ppigrf
+        # Calculate geodetic magnetic field components using ppigrf
         # ppigrf.igrf returns Be (east), Bn (north), Bu (up) in geodetic coordinates
         Be, Bn, Bu = ppigrf.igrf(self.lon, self.lat, self.alt_km, self.time)
         
-        # Calculate derived parameters
+        # Calculate geocentric magnetic field components using ppigrf
+        # First convert geodetic coordinates to geocentric
+        # r = radius from Earth center (km)
+        # theta = colatitude (90 - latitude) in degrees
+        # phi = longitude (same as geodetic)
+        
+        # Earth's radius approximation
+        RE = 6371.2  # km, standard geophysical radius
+        r = RE + self.alt_km  # radius from Earth center
+        theta = 90.0 - self.lat  # colatitude (degrees)
+        phi = self.lon  # longitude (same as geodetic)
+        
+        # Get geocentric magnetic field components
+        # ppigrf.igrf_gc returns Br (radial), Btheta (south), Bphi (east)
+        Br, Btheta, Bphi = ppigrf.igrf_gc(r, theta, phi, self.time)
+        
+        # Calculate derived parameters from geodetic components
         inclination, declination = ppigrf.get_inclination_declination(Be, Bn, Bu, degrees=True)
         
-        # Calculate horizontal field intensity
+        # Calculate field intensities
         horizontal_intensity = np.sqrt(Be**2 + Bn**2)
-        
-        # Calculate total field intensity
         total_field = np.sqrt(Be**2 + Bn**2 + Bu**2)
         
         # Create xarray Dataset for the magnetic field model
         self.magnetic_field = xr.Dataset(
             {
+                # Geodetic components
                 "Be": (["altitude"], Be.flatten()),  # East component (nT)
                 "Bn": (["altitude"], Bn.flatten()),  # North component (nT)
                 "Bu": (["altitude"], Bu.flatten()),  # Up component (nT)
+                
+                # Geocentric components  
+                "Br": (["altitude"], Br.flatten()),  # Radial component (nT)
+                "Btheta": (["altitude"], Btheta.flatten()),  # Colatitude component (nT)
+                "Bphi": (["altitude"], Bphi.flatten()),  # Azimuthal component (nT)
+                
+                # Derived parameters
                 "inclination": (["altitude"], inclination.flatten()),  # Inclination (degrees)
                 "declination": (["altitude"], declination.flatten()),  # Declination (degrees)
                 "horizontal_intensity": (["altitude"], horizontal_intensity.flatten()),  # Horizontal intensity (nT)
@@ -160,10 +184,13 @@ class MagneticField1D:
             },
             attrs={
                 "model": self.model,
-                "description": "Magnetic field parameters from IGRF model",
+                "description": "Magnetic field parameters from IGRF model in geodetic and geocentric coordinates",
                 "field_units": "nT",
                 "angle_units": "degrees",
-                "altitude_units": "km"
+                "altitude_units": "km",
+                "geodetic_components": "Be (east), Bn (north), Bu (up)",
+                "geocentric_components": "Br (radial), Btheta (south), Bphi (east)",
+                "coordinate_system_note": "Geodetic components are tangent to Earth's ellipsoid, geocentric are spherical"
             }
         )
             
@@ -176,7 +203,8 @@ class MagneticField1D:
         variable : str, optional
             Variable to plot. Options:
             - 'total_field': Total field intensity (default)
-            - 'components': All field components (Be, Bn, Bu)
+            - 'components': Geodetic field components (Be, Bn, Bu)
+            - 'geocentric_components': Geocentric field components (Br, Btheta, Bphi)
             - 'inclination': Magnetic inclination
             - 'declination': Magnetic declination
             - 'horizontal_intensity': Horizontal field intensity
@@ -214,7 +242,31 @@ class MagneticField1D:
             axes[2].set_ylabel('Altitude (km)')
             axes[2].grid(True, alpha=0.3)
             
-            fig.suptitle(f'IGRF Magnetic Field Components\n'
+            fig.suptitle(f'IGRF Magnetic Field Components (Geodetic)\n'
+                        f'Lat: {self.lat:.2f}°, Lon: {self.lon:.2f}°, Time: {self.time}')
+            
+        elif variable == 'geocentric_components':
+            fig, axes = plt.subplots(1, 3, figsize=(15, 10))
+            
+            # Radial component
+            axes[0].plot(self.magnetic_field["Br"], self.alt_km, 'r-', label='Br (Radial)')
+            axes[0].set_xlabel('Br - Radial Component (nT)')
+            axes[0].set_ylabel('Altitude (km)')
+            axes[0].grid(True, alpha=0.3)
+            
+            # Colatitude component
+            axes[1].plot(self.magnetic_field["Btheta"], self.alt_km, 'g-', label='Btheta (Colatitude)')
+            axes[1].set_xlabel('Btheta - Colatitude Component (nT)')
+            axes[1].set_ylabel('Altitude (km)')
+            axes[1].grid(True, alpha=0.3)
+            
+            # Azimuth component
+            axes[2].plot(self.magnetic_field["Bphi"], self.alt_km, 'b-', label='Bphi (Azimuth)')
+            axes[2].set_xlabel('Bphi - Azimuth Component (nT)')
+            axes[2].set_ylabel('Altitude (km)')
+            axes[2].grid(True, alpha=0.3)
+            
+            fig.suptitle(f'IGRF Magnetic Field Components (Geocentric)\n'
                         f'Lat: {self.lat:.2f}°, Lon: {self.lon:.2f}°, Time: {self.time}')
             
         elif variable == 'inclination':
@@ -245,7 +297,7 @@ class MagneticField1D:
             ax.grid(True, alpha=0.3)
             
         else:
-            available_vars = ['total_field', 'components', 'inclination', 'declination', 'horizontal_intensity']
+            available_vars = ['total_field', 'components', 'geocentric_components', 'inclination', 'declination', 'horizontal_intensity']
             raise ValueError(f"Unknown variable '{variable}'. Available variables: {available_vars}")
         
         plt.tight_layout()
