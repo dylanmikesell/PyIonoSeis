@@ -114,3 +114,5 @@ site/
 pyionoseis/iri2020*
 pypi_token.txt
 dylan-notes.txt
+
+PyIonoSeis.code-workspace

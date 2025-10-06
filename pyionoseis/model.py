@@ -10,6 +10,7 @@ import matplotlib.font_manager as fm
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from pyionoseis.atmosphere import Atmosphere1D
+from pyionoseis.ionosphere import Ionosphere1D
 
 class Model3D:
     """
@@ -94,6 +95,21 @@ class Model3D:
         -------
         AttributeError
             If the 3D grid is not created.
+    assign_ionosphere(self, ionosphere_model="iri2020"):
+        Assign ionospheric electron density to all points in the 3D model domain.
+        Parameters:
+        -----------
+        ionosphere_model : str
+            The ionospheric model to use (default: "iri2020")
+    plot_variable(self, variable='grid_points', altitude_slice=None):
+        Plot different variables on the model grid.
+        Parameters:
+        -----------
+        variable : str
+            Variable to plot: 'grid_points', 'electron_density', 'density', 
+            'pressure', 'velocity', 'temperature'
+        altitude_slice : float, optional
+            Altitude level (km) for 2D maps
     """
     pass
     def __init__(self, toml_file=None):
@@ -108,6 +124,8 @@ class Model3D:
             self.height_spacing = 20.0 
             self.source = None
             self.atmosphere = None
+            self.atmosphere_model = "msise00"
+            self.ionosphere_model = "iri2020"
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -117,6 +135,7 @@ class Model3D:
         self.height = model.get('height', 500.0)
         self.winds = model.get('winds', False)
         self.atmosphere_model = model.get('atmosphere', "msise00")
+        self.ionosphere_model = model.get('ionosphere', "iri2020")
         self.grid_spacing = model.get('grid_spacing', 1.0)
         units = model.get('grid_units')
         if units == "km":
@@ -141,6 +160,116 @@ class Model3D:
                                   self.source.get_time(), 
                                   self.atmosphere_model)
 
+    def assign_ionosphere(self, ionosphere_model="iri2020"):
+        """
+        Assign ionospheric electron density to all points in the 3D model domain.
+        
+        This method computes electron density using the specified ionospheric model
+        for each latitude-longitude location in the 3D grid. The computation is done
+        efficiently by computing vertical profiles for each lat-lon point.
+        
+        Parameters:
+        -----------
+        ionosphere_model : str
+            The ionospheric model to use. Currently supports:
+            - "iri2020": International Reference Ionosphere 2020 model (default)
+            
+        Raises:
+        -------
+        AttributeError
+            If source is not assigned to the model or 3D grid is not created.
+        ValueError
+            If an unsupported ionosphere model is specified.
+            
+        Notes:
+        ------
+        The electron density is computed at each grid point and stored in the
+        'electron_density' field of the grid DataArray. Units are m⁻³.
+        
+        The computation strategy:
+        1. For each unique lat-lon pair in the 3D grid
+        2. Compute a vertical electron density profile using the ionosphere model
+        3. Interpolate/assign the profile to all altitude levels at that location
+        4. Store results in the 3D grid structure
+        """
+        if not hasattr(self, 'source'):
+            raise AttributeError("Source not assigned to the model.")
+        if not hasattr(self, 'grid'):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+            
+        # Supported ionosphere models
+        supported_models = ["iri2020"]
+        if ionosphere_model not in supported_models:
+            raise ValueError(f"Unsupported ionosphere model '{ionosphere_model}'. "
+                           f"Supported models: {supported_models}")
+        
+        # Get grid coordinates
+        latitudes = self.grid.coords['latitude'].values
+        longitudes = self.grid.coords['longitude'].values
+        altitudes = self.grid.coords['altitude'].values
+        
+        # Get source time
+        time = self.source.get_time()
+        
+        print(f"Computing ionospheric electron density using {ionosphere_model}...")
+        print(f"Grid dimensions: {len(latitudes)} lat × {len(longitudes)} lon × {len(altitudes)} alt")
+        
+        # Initialize the electron density array
+        electron_density_3d = np.zeros((len(latitudes), len(longitudes), len(altitudes)))
+        
+        # Compute electron density for each lat-lon location
+        total_profiles = len(latitudes) * len(longitudes)
+        profile_count = 0
+        
+        for i, lat in enumerate(latitudes):
+            for j, lon in enumerate(longitudes):
+                profile_count += 1
+                
+                # Show progress for large grids
+                if total_profiles > 10 and profile_count % max(1, total_profiles // 10) == 0:
+                    print(f"  Progress: {profile_count}/{total_profiles} "
+                          f"({100*profile_count/total_profiles:.0f}%) profiles computed")
+                
+                try:
+                    # Create 1D ionosphere model for this location
+                    iono_1d = Ionosphere1D(lat, lon, altitudes, time, ionosphere_model)
+                    
+                    # Extract electron density profile
+                    ne_profile = iono_1d.ionosphere.electron_density.values
+                    
+                    # Assign to 3D grid
+                    electron_density_3d[i, j, :] = ne_profile
+                    
+                except Exception as e:
+                    print(f"Warning: Failed to compute ionosphere at lat={lat:.2f}, lon={lon:.2f}: {e}")
+                    # Fill with NaN for failed computations
+                    electron_density_3d[i, j, :] = np.nan
+        
+        print("Ionospheric computation completed.")
+        
+        # Convert DataArray to Dataset and add electron density
+        if isinstance(self.grid, xr.DataArray):
+            # Convert to Dataset with the original data as 'grid_points'
+            grid_dataset = self.grid.to_dataset(name='grid_points')
+            # Add electron density as a new variable
+            grid_dataset['electron_density'] = (["latitude", "longitude", "altitude"], electron_density_3d)
+            self.grid = grid_dataset
+        else:
+            # If already a Dataset, use assign
+            self.grid = self.grid.assign(
+                electron_density=(["latitude", "longitude", "altitude"], electron_density_3d)
+            )
+        
+        # Update grid attributes
+        if not hasattr(self.grid, 'attrs'):
+            self.grid.attrs = {}
+        self.grid.attrs['ionosphere_model'] = ionosphere_model
+        self.grid.attrs['electron_density_units'] = 'm⁻³'
+        self.grid.attrs['electron_density_description'] = f'Electron density from {ionosphere_model} model'
+        
+        # Store ionosphere model info
+        self.ionosphere_model = ionosphere_model
+
 
         
     def __str__(self):
@@ -148,9 +277,13 @@ class Model3D:
         lat_extent_info = f"lat_extent = ({self.lat_extent[0]:.2f}, {self.lat_extent[1]:.2f})" if hasattr(self, 'lat_extent') else ""
         lon_extent_info = f"lon_extent = ({self.lon_extent[0]:.2f}, {self.lon_extent[1]:.2f})" if hasattr(self, 'lon_extent') else ""
         atmosphere_info = f"atmosphere_model = {self.atmosphere_model}" if hasattr(self, 'atmosphere_model') else ""
-        return (f"Model3D: name = {self.name}\n radius = {self.radius} (km)\n height = {self.height} (km)\n"
-                f" winds = {self.winds}\n {atmosphere_info}\n grid_spacing = {self.grid_spacing} (deg)\n height_spacing = {self.height_spacing} (km)\n"
-                f" source: {source_info}\n {lat_extent_info}\n {lon_extent_info}")
+        ionosphere_info = f"ionosphere_model = {self.ionosphere_model}" if hasattr(self, 'ionosphere_model') else ""
+        
+        base_info = (f"Model3D: name = {self.name}\n radius = {self.radius} (km)\n height = {self.height} (km)\n"
+                     f" winds = {self.winds}\n {atmosphere_info}\n {ionosphere_info}\n grid_spacing = {self.grid_spacing} (deg)\n height_spacing = {self.height_spacing} (km)\n"
+                     f" source: {source_info}\n {lat_extent_info}\n {lon_extent_info}")
+        
+        return base_info
 
     def print_info(self):
         print(self)
@@ -309,4 +442,204 @@ class Model3D:
         
         plt.title("3D Grid Points")
         
+        plt.show()
+        
+    def plot_variable(self, variable='grid_points', altitude_slice=None, **kwargs):
+        """
+        Plot different variables on the model grid.
+        
+        Parameters:
+        -----------
+        variable : str
+            The variable to plot. Options:
+            - 'grid_points': Plot grid points only (default)
+            - 'electron_density': Plot electron density (requires assign_ionosphere)
+            - 'density': Plot atmospheric density (requires assign_atmosphere)
+            - 'pressure': Plot atmospheric pressure (requires assign_atmosphere)
+            - 'velocity': Plot atmospheric velocity (requires assign_atmosphere)
+            - 'temperature': Plot atmospheric temperature (requires assign_atmosphere)
+        altitude_slice : float, optional
+            Altitude level (km) to plot for 2D maps. If None, plots all grid points or
+            vertical profiles depending on the variable.
+        **kwargs : dict
+            Additional plotting parameters passed to matplotlib functions.
+            
+        Examples:
+        ---------
+        # Plot grid points
+        model.plot_variable('grid_points')
+        
+        # Plot electron density at 300 km altitude
+        model.plot_variable('electron_density', altitude_slice=300)
+        
+        # Plot electron density profile at source location
+        model.plot_variable('electron_density')
+        """
+        if not hasattr(self, 'grid'):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+            
+        if variable == 'grid_points':
+            # Plot grid points (existing functionality)
+            if altitude_slice is None:
+                self.plot_grid_3d()
+            else:
+                self.plot_grid()
+                
+        elif variable == 'electron_density':
+            self._plot_electron_density(altitude_slice, **kwargs)
+            
+        elif variable in ['density', 'pressure', 'velocity', 'temperature']:
+            self._plot_atmospheric_variable(variable, altitude_slice, **kwargs)
+            
+        else:
+            available_vars = ['grid_points', 'electron_density', 'density', 'pressure', 'velocity', 'temperature']
+            raise ValueError(f"Unknown variable '{variable}'. Available variables: {available_vars}")
+    
+    def _plot_electron_density(self, altitude_slice=None, **kwargs):
+        """Plot electron density."""
+        if 'electron_density' not in self.grid.data_vars:
+            raise AttributeError("Electron density not computed. Call assign_ionosphere() first.")
+        
+        if altitude_slice is not None:
+            # Plot 2D map at specified altitude
+            self._plot_2d_map('electron_density', altitude_slice, 
+                            title_prefix='Electron Density', 
+                            units='m⁻³', log_scale=True, **kwargs)
+        else:
+            # Plot vertical profile at source location
+            self._plot_vertical_profile('electron_density', 
+                                      title_prefix='Electron Density',
+                                      units='m⁻³', log_scale=True, **kwargs)
+    
+    def _plot_atmospheric_variable(self, variable, altitude_slice=None, **kwargs):
+        """Plot atmospheric variables."""
+        if not hasattr(self, 'atmosphere'):
+            raise AttributeError("Atmospheric data not computed. Call assign_atmosphere() first.")
+        
+        # For atmospheric variables, we only have 1D profiles at source location
+        if altitude_slice is not None:
+            print("Warning: altitude_slice not supported for atmospheric variables. "
+                  "Atmospheric data is only available as 1D profile at source location.")
+        
+        # Plot 1D atmospheric profile
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
+        
+        atmos_data = self.atmosphere.atmosphere[variable]
+        altitudes = self.atmosphere.alt_km
+        
+        if variable in ['density', 'pressure']:
+            ax.semilogx(atmos_data, altitudes, **kwargs)
+        else:
+            ax.plot(atmos_data, altitudes, **kwargs)
+            
+        var_labels = {
+            'density': 'Density (kg/m³)',
+            'pressure': 'Pressure (Pa)', 
+            'velocity': 'Velocity (km/s)',
+            'temperature': 'Temperature (K)'
+        }
+        
+        ax.set_xlabel(var_labels.get(variable, variable))
+        ax.set_ylabel('Altitude (km)')
+        ax.set_title(f'Atmospheric {variable.title()} Profile\n'
+                    f'Lat: {self.source.get_latitude():.2f}°, '
+                    f'Lon: {self.source.get_longitude():.2f}°')
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.show()
+    
+    def _plot_2d_map(self, variable, altitude, title_prefix, units, log_scale=False, **kwargs):
+        """Plot 2D map of a variable at specified altitude."""
+        # Find closest altitude level
+        altitudes = self.grid.coords['altitude'].values
+        alt_idx = np.argmin(np.abs(altitudes - altitude))
+        actual_altitude = altitudes[alt_idx]
+        
+        # Extract 2D slice
+        data_2d = self.grid[variable].isel(altitude=alt_idx)
+        
+        # Create map
+        latitudes = self.grid.coords['latitude'].values
+        longitudes = self.grid.coords['longitude'].values
+        
+        fig, ax = plt.subplots(1, 1, figsize=(12, 8), 
+                              subplot_kw={'projection': ccrs.PlateCarree()})
+        
+        # Set map extent
+        extent = [longitudes.min(), longitudes.max(), 
+                 latitudes.min(), latitudes.max()]
+        ax.set_extent(extent, crs=ccrs.PlateCarree())
+        
+        # Add map features
+        ax.add_feature(cfeature.COASTLINE)
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+        ax.add_feature(cfeature.LAND, alpha=0.3)
+        ax.add_feature(cfeature.OCEAN, alpha=0.3)
+        
+        # Create meshgrid for plotting
+        lon_grid, lat_grid = np.meshgrid(longitudes, latitudes)
+        
+        # Plot data
+        if log_scale:
+            im = ax.contourf(lon_grid, lat_grid, data_2d.values, 
+                           levels=20, transform=ccrs.PlateCarree(), 
+                           norm=plt.cm.colors.LogNorm(), **kwargs)
+        else:
+            im = ax.contourf(lon_grid, lat_grid, data_2d.values, 
+                           levels=20, transform=ccrs.PlateCarree(), **kwargs)
+        
+        # Add colorbar
+        cbar = fig.colorbar(im, ax=ax, shrink=0.8)
+        cbar.set_label(f'{title_prefix} ({units})')
+        
+        # Plot source location
+        if hasattr(self, 'source'):
+            ax.plot(self.source.get_longitude(), self.source.get_latitude(), 
+                   'k*', markersize=15, transform=ccrs.PlateCarree(), 
+                   label='Source')
+            ax.legend()
+        
+        # Add gridlines
+        ax.gridlines(draw_labels=True, alpha=0.5)
+        
+        plt.title(f'{title_prefix} at {actual_altitude:.1f} km\n'
+                 f'Time: {self.source.get_time() if hasattr(self, "source") else "N/A"}')
+        
+        plt.tight_layout()
+        plt.show()
+    
+    def _plot_vertical_profile(self, variable, title_prefix, units, log_scale=False, **kwargs):
+        """Plot vertical profile of a variable at source location."""
+        if not hasattr(self, 'source'):
+            raise AttributeError("Source not assigned to the model.")
+        
+        # Find closest grid point to source
+        latitudes = self.grid.coords['latitude'].values
+        longitudes = self.grid.coords['longitude'].values
+        
+        lat_idx = np.argmin(np.abs(latitudes - self.source.get_latitude()))
+        lon_idx = np.argmin(np.abs(longitudes - self.source.get_longitude()))
+        
+        # Extract vertical profile
+        profile = self.grid[variable].isel(latitude=lat_idx, longitude=lon_idx)
+        altitudes = self.grid.coords['altitude'].values
+        
+        # Plot profile
+        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
+        
+        if log_scale:
+            ax.semilogx(profile.values, altitudes, **kwargs)
+        else:
+            ax.plot(profile.values, altitudes, **kwargs)
+            
+        ax.set_xlabel(f'{title_prefix} ({units})')
+        ax.set_ylabel('Altitude (km)')
+        ax.set_title(f'{title_prefix} Vertical Profile\n'
+                    f'Lat: {self.source.get_latitude():.2f}°, '
+                    f'Lon: {self.source.get_longitude():.2f}°, '
+                    f'Time: {self.source.get_time()}')
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
         plt.show()

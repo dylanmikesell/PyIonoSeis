@@ -3,3 +3,4 @@ toml
 cartopy
 click
 msise00
+iri2020 @ git+https://github.com/space-physics/iri2020.git
