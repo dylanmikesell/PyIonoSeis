@@ -4,6 +4,13 @@
 import toml
 import xarray as xr
 import numpy as np
+import os
+import warnings
+import json
+import hashlib
+from pathlib import Path
+import shutil
+import tempfile
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -12,6 +19,7 @@ import cartopy.feature as cfeature
 from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.ionosphere import Ionosphere1D
 from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
+from pyionoseis import infraga as infraga_tools
 
 class Model3D:
     """
@@ -127,6 +135,9 @@ class Model3D:
             self.atmosphere = None
             self.atmosphere_model = "msise00"
             self.ionosphere_model = "iri2020"
+            self.raypaths = None
+            self.ray_arrivals = None
+            self.raytrace_run_dir = None
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -160,6 +171,585 @@ class Model3D:
                                   self.grid.coords['altitude'].values, 
                                   self.source.get_time(), 
                                   self.atmosphere_model)
+
+    @staticmethod
+    def _array_sha256(values):
+        """Build a deterministic SHA256 digest for a numeric array."""
+        array = np.asarray(values, dtype=np.float64)
+        hasher = hashlib.sha256()
+        hasher.update(str(array.shape).encode("utf-8"))
+        hasher.update(array.tobytes())
+        return hasher.hexdigest()
+
+    @staticmethod
+    def _canonical_json_hash(payload):
+        """Hash a JSON-serializable payload using canonical key ordering."""
+        serialized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _normalize_signature_payload(raw):
+        """Return signature payload when wrapped/unwrapped JSON is supplied."""
+        if isinstance(raw, dict) and "signature" in raw and isinstance(raw["signature"], dict):
+            return raw["signature"]
+        return raw
+
+    @staticmethod
+    def _signature_path_for_output_prefix(output_prefix):
+        return Path(str(output_prefix) + ".signature.json")
+
+    @staticmethod
+    def _signature_path_for_raypaths(raypaths_file):
+        raypaths_file = Path(raypaths_file)
+        raypaths_name = raypaths_file.name
+        if raypaths_name.endswith(".raypaths.dat"):
+            base_name = raypaths_name[: -len(".raypaths.dat")]
+            return raypaths_file.with_name(base_name + ".signature.json")
+        return Path(str(raypaths_file) + ".signature.json")
+
+    def _cache_token(self, signature_hash, cache_id=None):
+        if cache_id is None:
+            return signature_hash[:12]
+        token = str(cache_id).strip()
+        if not token:
+            return signature_hash[:12]
+        return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in token)
+
+    def _build_ray_signature_payload(self, type, ray_params, profile):
+        return {
+            "signature_version": 1,
+            "run_type": str(type),
+            "source": {
+                "latitude_deg": float(self.source.get_latitude()),
+                "longitude_deg": float(self.source.get_longitude()),
+                "time": str(self.source.get_time()),
+            },
+            "ray_params": ray_params,
+            "profile": profile,
+        }
+
+    def _apply_raypaths_metadata(
+        self,
+        raypaths,
+        type,
+        use_accel,
+        accel_used,
+        command,
+        signature_hash=None,
+    ):
+        raypaths.attrs["raytrace_backend"] = "infraga_sph"
+        raypaths.attrs["raytrace_type"] = type
+        raypaths.attrs["raytrace_accel_requested"] = bool(use_accel)
+        raypaths.attrs["raytrace_accel_used"] = bool(accel_used)
+        raypaths.attrs["source_latitude_deg"] = float(self.source.get_latitude())
+        raypaths.attrs["source_longitude_deg"] = float(self.source.get_longitude())
+        raypaths.attrs["source_time"] = str(self.source.get_time())
+        raypaths.attrs["prof_format"] = "zcuvd"
+        raypaths.attrs["winds_assumed_zero"] = True
+        raypaths.attrs["infraga_command"] = " ".join(command)
+        if signature_hash is not None:
+            raypaths.attrs["raytrace_signature_hash"] = signature_hash
+
+    @staticmethod
+    def _azimuth_sequence(az_min, az_max, az_step):
+        """Build normalized azimuth sequence in degrees."""
+        if float(az_step) <= 0.0:
+            raise ValueError("az_interp_step must be > 0.")
+        if float(az_max) < float(az_min):
+            raise ValueError("az_interp_max must be >= az_interp_min.")
+
+        az_values = np.arange(float(az_min), float(az_max) + 0.5 * float(az_step), float(az_step))
+        az_values = np.mod(az_values, 360.0)
+        # Avoid duplicate endpoint (e.g., 0 and 360).
+        _, unique_idx = np.unique(np.round(az_values, 12), return_index=True)
+        unique_idx = np.sort(unique_idx)
+        return az_values[unique_idx]
+
+    @staticmethod
+    def _forward_geodesic_deg(src_lat_deg, src_lon_deg, angular_distance_rad, azimuth_deg):
+        """Project points from source by angular distance and azimuth on a sphere."""
+        lat1 = np.deg2rad(float(src_lat_deg))
+        lon1 = np.deg2rad(float(src_lon_deg))
+        az = np.deg2rad(float(azimuth_deg))
+        delta = np.asarray(angular_distance_rad, dtype=np.float64)
+
+        sin_lat1 = np.sin(lat1)
+        cos_lat1 = np.cos(lat1)
+        sin_delta = np.sin(delta)
+        cos_delta = np.cos(delta)
+
+        lat2 = np.arcsin(
+            np.clip(sin_lat1 * cos_delta + cos_lat1 * sin_delta * np.cos(az), -1.0, 1.0)
+        )
+        lon2 = lon1 + np.arctan2(
+            np.sin(az) * sin_delta * cos_lat1,
+            cos_delta - sin_lat1 * np.sin(lat2),
+        )
+
+        lat2_deg = np.rad2deg(lat2)
+        lon2_deg = ((np.rad2deg(lon2) + 180.0) % 360.0) - 180.0
+        return lat2_deg, lon2_deg
+
+    @staticmethod
+    def _great_circle_angular_distance_rad(src_lat_deg, src_lon_deg, dst_lat_deg, dst_lon_deg):
+        """Great-circle angular distance between source and destination points."""
+        lat1 = np.deg2rad(float(src_lat_deg))
+        lon1 = np.deg2rad(float(src_lon_deg))
+        lat2 = np.deg2rad(np.asarray(dst_lat_deg, dtype=np.float64))
+        lon2 = np.deg2rad(np.asarray(dst_lon_deg, dtype=np.float64))
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = (
+            np.sin(dlat / 2.0) ** 2
+            + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2.0) ** 2
+        )
+        return 2.0 * np.arctan2(np.sqrt(np.clip(a, 0.0, 1.0)), np.sqrt(np.clip(1.0 - a, 0.0, 1.0)))
+
+    def _project_2d_raypaths_to_azimuths(self, raypaths, az_min, az_max, az_step):
+        """Expand 2D raypaths into synthetic 3D by azimuthal projection."""
+        az_values = self._azimuth_sequence(az_min=az_min, az_max=az_max, az_step=az_step)
+        if az_values.size <= 1:
+            return raypaths
+
+        src_lat = float(self.source.get_latitude())
+        src_lon = float(self.source.get_longitude())
+        lat_orig = raypaths["ray_lat_deg"].values
+        lon_orig = raypaths["ray_lon_deg"].values
+        angular_distance = self._great_circle_angular_distance_rad(
+            src_lat_deg=src_lat,
+            src_lon_deg=src_lon,
+            dst_lat_deg=lat_orig,
+            dst_lon_deg=lon_orig,
+        )
+
+        n_points = lat_orig.size
+        az_count = az_values.size
+        expanded = {}
+        for name in raypaths.data_vars:
+            expanded[name] = np.tile(raypaths[name].values, az_count)
+
+        expanded_lat = np.empty(n_points * az_count, dtype=np.float64)
+        expanded_lon = np.empty(n_points * az_count, dtype=np.float64)
+        expanded_az = np.empty(n_points * az_count, dtype=np.float64)
+
+        for idx, azimuth in enumerate(az_values):
+            start = idx * n_points
+            end = start + n_points
+            lat_new, lon_new = self._forward_geodesic_deg(
+                src_lat_deg=src_lat,
+                src_lon_deg=src_lon,
+                angular_distance_rad=angular_distance,
+                azimuth_deg=float(azimuth),
+            )
+            expanded_lat[start:end] = lat_new
+            expanded_lon[start:end] = lon_new
+            expanded_az[start:end] = azimuth
+
+        expanded["ray_lat_deg"] = expanded_lat
+        expanded["ray_lon_deg"] = expanded_lon
+        expanded["ray_azimuth_deg"] = expanded_az
+
+        projected = xr.Dataset(
+            {name: (["ray_point"], values) for name, values in expanded.items()},
+            attrs=dict(raypaths.attrs),
+        )
+        projected.attrs["synthetic_3d_from_2d"] = True
+        projected.attrs["synthetic_3d_az_min_deg"] = float(az_min)
+        projected.attrs["synthetic_3d_az_max_deg"] = float(az_max)
+        projected.attrs["synthetic_3d_az_step_deg"] = float(az_step)
+        projected.attrs["synthetic_3d_az_count"] = int(az_count)
+        projected.attrs["synthetic_3d_note"] = (
+            "Projected from single-azimuth 2D rays assuming axisymmetry."
+        )
+        return projected
+
+    def load_rays(
+        self,
+        raypaths_file,
+        arrivals_file=None,
+        type=None,
+        validate_signature=False,
+        signature_file=None,
+    ):
+        """Load previously generated ray files into the model.
+
+        Parameters
+        ----------
+        raypaths_file : str or Path
+            Path to ``*.raypaths.dat`` produced by infraGA.
+        arrivals_file : str or Path, optional
+            Optional path to ``*.arrivals.dat``.
+        type : str, optional
+            Run type ("2d" or "3d"). If omitted, inferred from file metadata/name.
+        validate_signature : bool, optional
+            Validate signature against the current model source/atmosphere.
+        signature_file : str or Path, optional
+            Path to signature JSON sidecar. Defaults to inferred sibling file.
+        """
+        raypaths_path = Path(raypaths_file)
+        if not raypaths_path.exists():
+            raise FileNotFoundError(f"Raypaths file does not exist: {raypaths_path}")
+
+        run_type = type
+        if run_type is None:
+            if "infraga_2d_" in raypaths_path.name:
+                run_type = "2d"
+            elif "infraga_3d_" in raypaths_path.name:
+                run_type = "3d"
+            elif "infraga_2d_sph" in raypaths_path.name:
+                run_type = "2d"
+            else:
+                run_type = "3d"
+        if run_type not in ["2d", "3d"]:
+            raise ValueError("type must be '2d' or '3d'.")
+
+        arrivals_path = Path(arrivals_file) if arrivals_file is not None else Path(
+            str(raypaths_path).replace(".raypaths.dat", ".arrivals.dat")
+        )
+        if arrivals_file is None and arrivals_path == raypaths_path:
+            arrivals_path = Path(str(raypaths_path) + ".arrivals.dat")
+
+        if validate_signature:
+            sig_path = (
+                Path(signature_file)
+                if signature_file is not None
+                else self._signature_path_for_raypaths(raypaths_path)
+            )
+            if not sig_path.exists():
+                raise FileNotFoundError(f"Signature file does not exist: {sig_path}")
+            with sig_path.open("r", encoding="utf-8") as fh:
+                raw_sig_data = json.load(fh)
+            expected_payload = self._normalize_signature_payload(raw_sig_data)
+            if self.source is None:
+                raise AttributeError("Source must be assigned for signature validation.")
+            if self.atmosphere is None:
+                if not hasattr(self, "grid"):
+                    raise AttributeError(
+                        "3D grid not created. Call make_3Dgrid() first for signature validation."
+                    )
+                self.assign_atmosphere()
+            actual_payload = self._build_ray_signature_payload(
+                type=run_type,
+                ray_params=expected_payload.get("ray_params", {}),
+                profile={
+                    "prof_format": expected_payload.get("profile", {}).get("prof_format", "zcuvd"),
+                    "winds_assumed_zero": bool(
+                        expected_payload.get("profile", {}).get("winds_assumed_zero", True)
+                    ),
+                    "altitude_sha256": self._array_sha256(
+                        self.atmosphere.atmosphere["altitude"].values
+                    ),
+                    "velocity_sha256": self._array_sha256(
+                        self.atmosphere.atmosphere["velocity"].values
+                    ),
+                    "density_sha256": self._array_sha256(
+                        self.atmosphere.atmosphere["density"].values
+                    ),
+                },
+            )
+            if actual_payload != expected_payload:
+                raise ValueError(
+                    "Ray signature mismatch: files do not match current model source/atmosphere."
+                )
+
+        self.raypaths = infraga_tools.parse_sph_raypaths(raypaths_path, run_type=run_type)
+        self.ray_arrivals = (
+            infraga_tools.parse_arrivals(arrivals_path)
+            if arrivals_path.exists()
+            else xr.Dataset()
+        )
+        self.raytrace_run_dir = str(raypaths_path.parent)
+        return self.raypaths
+
+    def trace_rays(
+        self,
+        type="3d",
+        output_dir=None,
+        keep_files=True,
+        reuse_existing=True,
+        force_recompute=False,
+        cache_id=None,
+        executable=None,
+        use_accel=False,
+        cpu_cnt=None,
+        az_interp=False,
+        az_interp_min=0.0,
+        az_interp_max=360.0,
+        az_interp_step=1.0,
+        azimuth_deg=0.0,
+        az_min=0.0,
+        az_max=360.0,
+        az_step=10.0,
+        incl_min=45.0,
+        incl_max=90.0,
+        incl_step=1.0,
+        bounces=0,
+        max_rng_km=5000.0,
+        frequency_hz=0.005,
+    ):
+        """Trace rays with infraGA using spherical propagation only.
+
+        Parameters
+        ----------
+        type : str, optional
+            Run type selector. Supported values:
+            - "3d": spherical azimuth sweep
+            - "2d": spherical single-azimuth mode (north by default)
+        output_dir : str or Path, optional
+            Directory where infraGA files are written.
+        keep_files : bool, optional
+            Keep generated files on disk. Defaults to True.
+        reuse_existing : bool, optional
+            If True and ``output_dir`` is set, reuse matching cached results.
+        force_recompute : bool, optional
+            If True, bypass cache checks and always run infraGA.
+        cache_id : str, optional
+            Optional cache token to isolate output files in one ``output_dir``.
+        executable : str, optional
+            Optional explicit executable name/path for infraGA CLI.
+        use_accel : bool, optional
+            Enable infraGA accelerated spherical backend selection via
+            ``--cpu-cnt``. Defaults to False.
+        cpu_cnt : int, optional
+            CPU count passed to infraGA when acceleration is enabled. If None
+            and ``use_accel`` is True, a default is inferred from available
+            CPUs and ray launch count.
+        az_interp : bool, optional
+            When ``type="2d"``, project the single-azimuth 2D result into
+            multiple azimuths to create a synthetic 3D ray cloud.
+        az_interp_min, az_interp_max, az_interp_step : float, optional
+            Azimuth sampling used when ``az_interp=True``. Values are in
+            degrees and endpoint duplicates (e.g., 0 and 360) are removed.
+
+        Notes
+        -----
+        This method stores raw ray products only and does not interpolate to
+        the model grid yet.
+
+        ``az_interp=True`` is a geometric remapping convenience. It assumes
+        axisymmetry around the source, so remapped travel times/amplitudes are
+        approximate in non-axisymmetric atmosphere/wind fields.
+        """
+        if type not in ["2d", "3d"]:
+            raise ValueError("type must be '2d' or '3d'.")
+        if type != "2d" and az_interp:
+            raise ValueError("az_interp is only supported when type='2d'.")
+
+        if self.source is None:
+            raise AttributeError("Source not assigned to the model.")
+
+        if not hasattr(self, "grid"):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+
+        if self.atmosphere is None:
+            self.assign_atmosphere()
+
+        if output_dir is not None:
+            run_dir = Path(output_dir)
+            run_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            run_dir = Path(tempfile.mkdtemp(prefix="pyionoseis_infraga_"))
+
+        cmd_prefix = infraga_tools.resolve_infraga_command(executable=executable)
+
+        effective_azimuth = azimuth_deg
+        if type == "2d":
+            # 2D behavior is represented as a single spherical azimuth run.
+            effective_azimuth = 0.0
+
+        effective_cpu_cnt = None
+        accel_used = False
+        if use_accel:
+            if infraga_tools.accel_sph_available():
+                if cpu_cnt is not None:
+                    effective_cpu_cnt = int(cpu_cnt)
+                    if effective_cpu_cnt < 2:
+                        raise ValueError("cpu_cnt must be >= 2 when use_accel=True.")
+                else:
+                    # Smart default: scale to launch count, bounded by machine cores.
+                    available = os.cpu_count() or 1
+                    if type == "2d":
+                        az_count = 1
+                    else:
+                        az_count = int(
+                            np.floor((float(az_max) - float(az_min)) / float(az_step))
+                        ) + 1
+                        az_count = max(1, az_count)
+                    incl_count = int(
+                        np.floor((float(incl_max) - float(incl_min)) / float(incl_step))
+                    ) + 1
+                    incl_count = max(1, incl_count)
+                    launch_count = az_count * incl_count
+
+                    if available >= 2:
+                        effective_cpu_cnt = min(available, max(2, launch_count))
+                accel_used = effective_cpu_cnt is not None
+            else:
+                warnings.warn(
+                    "use_accel=True requested, but accelerated spherical backend "
+                    "(`infraga-accel-sph` + `mpirun`) is unavailable. "
+                    "Falling back to non-accelerated spherical run.",
+                    RuntimeWarning,
+                )
+
+        ray_params = {
+            "azimuth_deg": float(effective_azimuth),
+            "az_min": float(az_min),
+            "az_max": float(az_max),
+            "az_step": float(az_step),
+            "incl_min": float(incl_min),
+            "incl_max": float(incl_max),
+            "incl_step": float(incl_step),
+            "bounces": int(bounces),
+            "max_rng_km": float(max_rng_km),
+            "frequency_hz": float(frequency_hz),
+            "use_accel": bool(use_accel),
+            "cpu_cnt_effective": (
+                int(effective_cpu_cnt) if effective_cpu_cnt is not None else None
+            ),
+            "accel_used": bool(accel_used),
+        }
+        profile_info = {
+            "prof_format": "zcuvd",
+            "winds_assumed_zero": True,
+            "altitude_sha256": self._array_sha256(self.atmosphere.atmosphere["altitude"].values),
+            "velocity_sha256": self._array_sha256(self.atmosphere.atmosphere["velocity"].values),
+            "density_sha256": self._array_sha256(self.atmosphere.atmosphere["density"].values),
+        }
+        signature_payload = self._build_ray_signature_payload(
+            type=type, ray_params=ray_params, profile=profile_info
+        )
+        signature_hash = self._canonical_json_hash(signature_payload)
+
+        profile_file = run_dir / "infraga_input_profile.zcuvd"
+        if output_dir is not None:
+            output_token = self._cache_token(signature_hash=signature_hash, cache_id=cache_id)
+            output_prefix = run_dir / f"infraga_{type}_sph_{output_token}"
+        else:
+            output_prefix = run_dir / f"infraga_{type}_sph"
+
+        raypaths_file = Path(str(output_prefix) + ".raypaths.dat")
+        arrivals_file = Path(str(output_prefix) + ".arrivals.dat")
+        signature_file = self._signature_path_for_output_prefix(output_prefix)
+
+        command = infraga_tools.build_sph_prop_command(
+            cmd_prefix=cmd_prefix,
+            atmo_file=profile_file,
+            output_id=output_prefix,
+            src_lat=float(self.source.get_latitude()),
+            src_lon=float(self.source.get_longitude()),
+            run_type=type,
+            azimuth_deg=float(effective_azimuth),
+            az_min=float(az_min),
+            az_max=float(az_max),
+            az_step=float(az_step),
+            incl_min=float(incl_min),
+            incl_max=float(incl_max),
+            incl_step=float(incl_step),
+            bounces=int(bounces),
+            max_rng_km=float(max_rng_km),
+            frequency_hz=float(frequency_hz),
+            cpu_cnt=effective_cpu_cnt,
+            prof_format="zcuvd",
+        )
+
+        if (
+            output_dir is not None
+            and reuse_existing
+            and not force_recompute
+            and raypaths_file.exists()
+            and signature_file.exists()
+        ):
+            with signature_file.open("r", encoding="utf-8") as fh:
+                saved_signature_raw = json.load(fh)
+            saved_signature_payload = self._normalize_signature_payload(saved_signature_raw)
+            if saved_signature_payload == signature_payload:
+                self.load_rays(raypaths_file=raypaths_file, arrivals_file=arrivals_file, type=type)
+                self._apply_raypaths_metadata(
+                    self.raypaths,
+                    type=type,
+                    use_accel=use_accel,
+                    accel_used=accel_used,
+                    command=command,
+                    signature_hash=signature_hash,
+                )
+                self.raypaths.attrs["raytrace_loaded_from_cache"] = True
+                self.raypaths.attrs["raytrace_signature_file"] = str(signature_file)
+                self.raytrace_run_dir = str(run_dir)
+                if type == "2d" and az_interp:
+                    warnings.warn(
+                        "az_interp=True remaps a single-azimuth 2D ray solution into synthetic 3D. "
+                        "This assumes an axisymmetric medium around the source. In non-axisymmetric "
+                        "atmosphere/wind fields, remapped travel times and amplitudes are not physically valid.",
+                        RuntimeWarning,
+                    )
+                    warnings.warn(
+                        "Ray tracing currently writes zero winds into infraGA profile (u=v=0). "
+                        "If your model includes winds or azimuth-dependent structure, synthetic 3D remapping "
+                        "is an approximation intended for visualization/sensitivity only.",
+                        RuntimeWarning,
+                    )
+                    self.raypaths = self._project_2d_raypaths_to_azimuths(
+                        self.raypaths,
+                        az_min=az_interp_min,
+                        az_max=az_interp_max,
+                        az_step=az_interp_step,
+                    )
+                return self.raypaths
+
+        infraga_tools.write_zcuvd_profile(self.atmosphere.atmosphere, profile_file)
+        infraga_tools.run_sph_trace(command)
+
+        self.load_rays(
+            raypaths_file=raypaths_file,
+            arrivals_file=arrivals_file,
+            type=type,
+        )
+
+        signature_payload_to_write = {
+            "signature_hash": signature_hash,
+            "signature": signature_payload,
+        }
+        with signature_file.open("w", encoding="utf-8") as fh:
+            json.dump(signature_payload_to_write, fh, indent=2, sort_keys=True)
+
+        self._apply_raypaths_metadata(
+            self.raypaths,
+            type=type,
+            use_accel=use_accel,
+            accel_used=accel_used,
+            command=command,
+            signature_hash=signature_hash,
+        )
+        self.raypaths.attrs["raytrace_loaded_from_cache"] = False
+        self.raypaths.attrs["raytrace_signature_file"] = str(signature_file)
+        self.raytrace_run_dir = str(run_dir)
+
+        if type == "2d" and az_interp:
+            warnings.warn(
+                "az_interp=True remaps a single-azimuth 2D ray solution into synthetic 3D. "
+                "This assumes an axisymmetric medium around the source. In non-axisymmetric "
+                "atmosphere/wind fields, remapped travel times and amplitudes are not physically valid.",
+                RuntimeWarning,
+            )
+            warnings.warn(
+                "Ray tracing currently writes zero winds into infraGA profile (u=v=0). "
+                "If your model includes winds or azimuth-dependent structure, synthetic 3D remapping "
+                "is an approximation intended for visualization/sensitivity only.",
+                RuntimeWarning,
+            )
+            self.raypaths = self._project_2d_raypaths_to_azimuths(
+                self.raypaths,
+                az_min=az_interp_min,
+                az_max=az_interp_max,
+                az_step=az_interp_step,
+            )
+
+        if not keep_files and output_dir is None:
+            shutil.rmtree(run_dir, ignore_errors=True)
+            self.raytrace_run_dir = None
+
+        return self.raypaths
 
     def assign_ionosphere(self, ionosphere_model="iri2020"):
         """

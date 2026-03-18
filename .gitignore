@@ -110,6 +110,10 @@ pyionoseis-dev/
 # Old code files on ODIN for Dylan development
 old/
 site/
+pyionoseis/legacy/
+example/**/*.dat
+example/**/*.json
+example/**/*.zcuvd
 
 pyionoseis/iri2020*
 pypi_token.txt
