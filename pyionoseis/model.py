@@ -1,126 +1,115 @@
-"""The model module contains common functions and classes used to generate the spatial modes.
-"""
+"""The model module contains common functions and classes used to generate the spatial modes."""
 
-import toml
-import xarray as xr
-import numpy as np
+from __future__ import annotations
+
+import logging
 import os
-import warnings
-import json
-import hashlib
-from pathlib import Path
 import shutil
 import tempfile
-from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-from pyionoseis.atmosphere import Atmosphere1D
-from pyionoseis.ionosphere import Ionosphere1D
-from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
-from pyionoseis import infraga as infraga_tools
+import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
-class Model3D:
-    """
-    A class to represent a 3D model for ionospheric studies.
-    Attributes:
-    -----------
+import numpy as np
+import toml
+import xarray as xr
+
+from pyionoseis import infraga as infraga_tools
+from pyionoseis import model_io
+from pyionoseis.atmosphere import Atmosphere1D
+from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
+from pyionoseis.ionosphere import Ionosphere1D
+from pyionoseis.model_plot import ModelPlotMixin
+
+_log = logging.getLogger(__name__)
+
+# Magnetic field variable names produced by MagneticField1D
+_MAG_VARS = [
+    "Be", "Bn", "Bu",
+    "Br", "Btheta", "Bphi",
+    "inclination", "declination",
+    "total_field", "horizontal_intensity",
+]
+
+
+def _iono_profile_worker(args):
+    """Compute a single ionospheric electron-density profile (thread worker)."""
+    lat, lon, altitudes, time, model_name = args
+    return Ionosphere1D(lat, lon, altitudes, time, model_name).ionosphere["electron_density"].values
+
+
+def _magfield_profile_worker(args):
+    """Compute a single magnetic-field vertical profile (thread worker)."""
+    lat, lon, altitudes, time, model_name = args
+    mf = MagneticField1D(lat, lon, altitudes, time, model_name)
+    return {v: mf.magnetic_field[v].values for v in _MAG_VARS}
+
+class Model3D(ModelPlotMixin):
+    """Central orchestrator for 3-D ionospheric CID modelling.
+
+    ``Model3D`` assembles a geographic 3-D grid and populates it with outputs
+    from multiple 1-D physical models (atmosphere, ionosphere, magnetic field)
+    evaluated at every grid column. It also manages infraGA spherical ray
+    tracing and caches results to avoid redundant computation.
+
+    Plotting methods are provided through :class:`~pyionoseis.model_plot.ModelPlotMixin`.
+    Caching and IO helpers are in :mod:`pyionoseis.model_io`.
+
+    Parameters
+    ----------
+    toml_file : str or Path, optional
+        Path to a TOML configuration file. When supplied all model parameters
+        are read from the ``[model]`` section. When omitted sensible defaults
+        are used.
+
+    Attributes
+    ----------
     name : str
-        The name of the model.
+        Human-readable model label.
     radius : float
-        The radius of the model in kilometers.
+        Epicentral radius of the model domain in km.
     height : float
-        The height of the model in kilometers.
+        Maximum altitude of the model domain in km.
     winds : bool
-        A flag indicating if winds are considered in the model.
+        Whether wind fields are included in the infraGA profile.
     grid_spacing : float
-        The spacing of the grid in degrees.
+        Horizontal grid spacing in degrees.
     height_spacing : float
-        The spacing of the height levels in kilometers.
-    source : object
-        The source object associated with the model.
-    grid : xarray.DataArray
-        The 3D grid of the model.
-    lat_extent : tuple
-        The latitude extent of the grid.
-    lon_extent : tuple
-        The longitude extent of the grid.
-    Methods:
-    --------
-    __init__(self, toml_file=None):
-        Initialize the Model3D instance.
-        Parameters:
-        -----------
-        toml_file : str, optional
-            The path to a TOML file to load model parameters from.
-    load_from_toml(self, toml_file):
-        Load model parameters from a TOML file.
-        Parameters:
-        -----------
-        toml_file : str
-            The path to the TOML file.
-    assign_source(self, source):
-        Assign a source to the model.
-        Parameters:
-        -----------
-        source : object
-            The source object to be assigned to the model.
-    __str__(self):
-        Return a string representation of the model.
-        Returns:
-        --------
-        str
-            A string describing the model.
-    print_info(self):
-        Print the model information.
-    make_3Dgrid(self):
-        Create a 3D grid with the given source and model parameters.
-        Raises:
-        -------
-        AttributeError
-            If the source is not assigned to the model.
-    plot(self):
-        Plot the source location on a map.
-        Raises:
-        -------
-        AttributeError
-            If the source is not assigned to the model.
-        ValueError
-            If the source does not have 'latitude' and 'longitude' attributes.
-    plot_grid(self, show_gridlines=False):
-        Plot the 2D grid points on a map.
-        Parameters:
-        -----------
-        show_gridlines : bool, optional
-            Whether to show gridlines on the plot. Default is False.
-        Raises:
-        -------
-        AttributeError
-            If the 3D grid is not created.
-    plot_grid_3d(self):
-        Plot the 3D grid points.
-        Raises:
-        -------
-        AttributeError
-            If the 3D grid is not created.
-    assign_ionosphere(self, ionosphere_model="iri2020"):
-        Assign ionospheric electron density to all points in the 3D model domain.
-        Parameters:
-        -----------
-        ionosphere_model : str
-            The ionospheric model to use (default: "iri2020")
-    plot_variable(self, variable='grid_points', altitude_slice=None):
-        Plot different variables on the model grid.
-        Parameters:
-        -----------
-        variable : str
-            Variable to plot: 'grid_points', 'electron_density', 'density', 
-            'pressure', 'velocity', 'temperature'
-        altitude_slice : float, optional
-            Altitude level (km) for 2D maps
+        Vertical grid spacing in km.
+    atmosphere_model : str
+        Name of the neutral atmosphere model (e.g. ``"msise00"``).
+    ionosphere_model : str
+        Name of the ionosphere model (e.g. ``"iri2020"``).
+    source : EarthquakeSource or None
+        Earthquake source assigned via :meth:`assign_source`.
+    grid : xr.Dataset
+        3-D grid Dataset with dimensions ``(latitude, longitude, altitude)``.
+        Always an ``xr.Dataset``; populated progressively by the ``assign_*``
+        methods.
+    atmosphere : Atmosphere1D or None
+        1-D atmosphere profile at the source location.
+    raypaths : xr.Dataset or None
+        Ray-path output from the last :meth:`trace_rays` call.
+    ray_arrivals : xr.Dataset or None
+        Arrival metadata from the last :meth:`trace_rays` call.
+    raytrace_run_dir : str or None
+        Directory where infraGA output files reside.
+    lat_extent : tuple[float, float]
+        ``(min_lat, max_lat)`` of the grid in degrees.
+    lon_extent : tuple[float, float]
+        ``(min_lon, max_lon)`` of the grid in degrees.
+
+    Notes
+    -----
+    Grid population (:meth:`assign_ionosphere`, :meth:`assign_magnetic_field`)
+    runs parallel 1-D model evaluations via :class:`~concurrent.futures.ThreadPoolExecutor`.
+    Progress is emitted through Python's standard ``logging`` module at the
+    ``INFO`` level. Enable it with::
+
+        import logging
+        logging.basicConfig(level=logging.INFO)
     """
-    pass
+
     def __init__(self, toml_file=None):
         if toml_file:
             self.load_from_toml(toml_file)
@@ -172,53 +161,10 @@ class Model3D:
                                   self.source.get_time(), 
                                   self.atmosphere_model)
 
-    @staticmethod
-    def _array_sha256(values):
-        """Build a deterministic SHA256 digest for a numeric array."""
-        array = np.asarray(values, dtype=np.float64)
-        hasher = hashlib.sha256()
-        hasher.update(str(array.shape).encode("utf-8"))
-        hasher.update(array.tobytes())
-        return hasher.hexdigest()
-
-    @staticmethod
-    def _canonical_json_hash(payload):
-        """Hash a JSON-serializable payload using canonical key ordering."""
-        serialized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
-
-    @staticmethod
-    def _normalize_signature_payload(raw):
-        """Return signature payload when wrapped/unwrapped JSON is supplied."""
-        if isinstance(raw, dict) and "signature" in raw and isinstance(raw["signature"], dict):
-            return raw["signature"]
-        return raw
-
-    @staticmethod
-    def _signature_path_for_output_prefix(output_prefix):
-        return Path(str(output_prefix) + ".signature.json")
-
-    @staticmethod
-    def _signature_path_for_raypaths(raypaths_file):
-        raypaths_file = Path(raypaths_file)
-        raypaths_name = raypaths_file.name
-        if raypaths_name.endswith(".raypaths.dat"):
-            base_name = raypaths_name[: -len(".raypaths.dat")]
-            return raypaths_file.with_name(base_name + ".signature.json")
-        return Path(str(raypaths_file) + ".signature.json")
-
-    def _cache_token(self, signature_hash, cache_id=None):
-        if cache_id is None:
-            return signature_hash[:12]
-        token = str(cache_id).strip()
-        if not token:
-            return signature_hash[:12]
-        return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in token)
-
-    def _build_ray_signature_payload(self, type, ray_params, profile):
+    def _build_ray_signature_payload(self, run_type, ray_params, profile):
         return {
             "signature_version": 1,
-            "run_type": str(type),
+            "run_type": str(run_type),
             "source": {
                 "latitude_deg": float(self.source.get_latitude()),
                 "longitude_deg": float(self.source.get_longitude()),
@@ -413,13 +359,14 @@ class Model3D:
             sig_path = (
                 Path(signature_file)
                 if signature_file is not None
-                else self._signature_path_for_raypaths(raypaths_path)
+                else model_io.signature_path_for_raypaths(raypaths_path)
             )
             if not sig_path.exists():
                 raise FileNotFoundError(f"Signature file does not exist: {sig_path}")
+            import json
             with sig_path.open("r", encoding="utf-8") as fh:
                 raw_sig_data = json.load(fh)
-            expected_payload = self._normalize_signature_payload(raw_sig_data)
+            expected_payload = model_io.normalize_signature_payload(raw_sig_data)
             if self.source is None:
                 raise AttributeError("Source must be assigned for signature validation.")
             if self.atmosphere is None:
@@ -429,20 +376,20 @@ class Model3D:
                     )
                 self.assign_atmosphere()
             actual_payload = self._build_ray_signature_payload(
-                type=run_type,
+                run_type=run_type,
                 ray_params=expected_payload.get("ray_params", {}),
                 profile={
                     "prof_format": expected_payload.get("profile", {}).get("prof_format", "zcuvd"),
                     "winds_assumed_zero": bool(
                         expected_payload.get("profile", {}).get("winds_assumed_zero", True)
                     ),
-                    "altitude_sha256": self._array_sha256(
+                    "altitude_sha256": model_io.array_sha256(
                         self.atmosphere.atmosphere["altitude"].values
                     ),
-                    "velocity_sha256": self._array_sha256(
+                    "velocity_sha256": model_io.array_sha256(
                         self.atmosphere.atmosphere["velocity"].values
                     ),
-                    "density_sha256": self._array_sha256(
+                    "density_sha256": model_io.array_sha256(
                         self.atmosphere.atmosphere["density"].values
                     ),
                 },
@@ -460,6 +407,23 @@ class Model3D:
         )
         self.raytrace_run_dir = str(raypaths_path.parent)
         return self.raypaths
+
+    def _warn_az_interp_approximation(self):
+        """Emit runtime warnings when az_interp synthetic-3D remapping is active."""
+        warnings.warn(
+            "az_interp=True remaps a single-azimuth 2D ray solution into synthetic 3D. "
+            "This assumes an axisymmetric medium around the source. In non-axisymmetric "
+            "atmosphere/wind fields, remapped travel times and amplitudes are not physically valid.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        warnings.warn(
+            "Ray tracing currently writes zero winds into infraGA profile (u=v=0). "
+            "If your model includes winds or azimuth-dependent structure, synthetic 3D remapping "
+            "is an approximation intended for visualization/sensitivity only.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
 
     def trace_rays(
         self,
@@ -612,25 +576,25 @@ class Model3D:
         profile_info = {
             "prof_format": "zcuvd",
             "winds_assumed_zero": True,
-            "altitude_sha256": self._array_sha256(self.atmosphere.atmosphere["altitude"].values),
-            "velocity_sha256": self._array_sha256(self.atmosphere.atmosphere["velocity"].values),
-            "density_sha256": self._array_sha256(self.atmosphere.atmosphere["density"].values),
+            "altitude_sha256": model_io.array_sha256(self.atmosphere.atmosphere["altitude"].values),
+            "velocity_sha256": model_io.array_sha256(self.atmosphere.atmosphere["velocity"].values),
+            "density_sha256": model_io.array_sha256(self.atmosphere.atmosphere["density"].values),
         }
         signature_payload = self._build_ray_signature_payload(
-            type=type, ray_params=ray_params, profile=profile_info
+            run_type=type, ray_params=ray_params, profile=profile_info
         )
-        signature_hash = self._canonical_json_hash(signature_payload)
+        signature_hash = model_io.canonical_json_hash(signature_payload)
 
         profile_file = run_dir / "infraga_input_profile.zcuvd"
         if output_dir is not None:
-            output_token = self._cache_token(signature_hash=signature_hash, cache_id=cache_id)
+            output_token = model_io.cache_token(signature_hash=signature_hash, cache_id=cache_id)
             output_prefix = run_dir / f"infraga_{type}_sph_{output_token}"
         else:
             output_prefix = run_dir / f"infraga_{type}_sph"
 
         raypaths_file = Path(str(output_prefix) + ".raypaths.dat")
         arrivals_file = Path(str(output_prefix) + ".arrivals.dat")
-        signature_file = self._signature_path_for_output_prefix(output_prefix)
+        signature_file = model_io.signature_path_for_output_prefix(output_prefix)
 
         command = infraga_tools.build_sph_prop_command(
             cmd_prefix=cmd_prefix,
@@ -660,9 +624,10 @@ class Model3D:
             and raypaths_file.exists()
             and signature_file.exists()
         ):
+            import json
             with signature_file.open("r", encoding="utf-8") as fh:
                 saved_signature_raw = json.load(fh)
-            saved_signature_payload = self._normalize_signature_payload(saved_signature_raw)
+            saved_signature_payload = model_io.normalize_signature_payload(saved_signature_raw)
             if saved_signature_payload == signature_payload:
                 self.load_rays(raypaths_file=raypaths_file, arrivals_file=arrivals_file, type=type)
                 self._apply_raypaths_metadata(
@@ -677,18 +642,7 @@ class Model3D:
                 self.raypaths.attrs["raytrace_signature_file"] = str(signature_file)
                 self.raytrace_run_dir = str(run_dir)
                 if type == "2d" and az_interp:
-                    warnings.warn(
-                        "az_interp=True remaps a single-azimuth 2D ray solution into synthetic 3D. "
-                        "This assumes an axisymmetric medium around the source. In non-axisymmetric "
-                        "atmosphere/wind fields, remapped travel times and amplitudes are not physically valid.",
-                        RuntimeWarning,
-                    )
-                    warnings.warn(
-                        "Ray tracing currently writes zero winds into infraGA profile (u=v=0). "
-                        "If your model includes winds or azimuth-dependent structure, synthetic 3D remapping "
-                        "is an approximation intended for visualization/sensitivity only.",
-                        RuntimeWarning,
-                    )
+                    self._warn_az_interp_approximation()
                     self.raypaths = self._project_2d_raypaths_to_azimuths(
                         self.raypaths,
                         az_min=az_interp_min,
@@ -710,6 +664,7 @@ class Model3D:
             "signature_hash": signature_hash,
             "signature": signature_payload,
         }
+        import json
         with signature_file.open("w", encoding="utf-8") as fh:
             json.dump(signature_payload_to_write, fh, indent=2, sort_keys=True)
 
@@ -726,18 +681,7 @@ class Model3D:
         self.raytrace_run_dir = str(run_dir)
 
         if type == "2d" and az_interp:
-            warnings.warn(
-                "az_interp=True remaps a single-azimuth 2D ray solution into synthetic 3D. "
-                "This assumes an axisymmetric medium around the source. In non-axisymmetric "
-                "atmosphere/wind fields, remapped travel times and amplitudes are not physically valid.",
-                RuntimeWarning,
-            )
-            warnings.warn(
-                "Ray tracing currently writes zero winds into infraGA profile (u=v=0). "
-                "If your model includes winds or azimuth-dependent structure, synthetic 3D remapping "
-                "is an approximation intended for visualization/sensitivity only.",
-                RuntimeWarning,
-            )
+            self._warn_az_interp_approximation()
             self.raypaths = self._project_2d_raypaths_to_azimuths(
                 self.raypaths,
                 az_min=az_interp_min,
@@ -751,286 +695,185 @@ class Model3D:
 
         return self.raypaths
 
-    def assign_ionosphere(self, ionosphere_model="iri2020"):
-        """
-        Assign ionospheric electron density to all points in the 3D model domain.
-        
-        This method computes electron density using the specified ionospheric model
-        for each latitude-longitude location in the 3D grid. The computation is done
-        efficiently by computing vertical profiles for each lat-lon point.
-        
-        Parameters:
-        -----------
+    def assign_ionosphere(self, ionosphere_model="iri2020", max_workers=None):
+        """Assign ionospheric electron density to all grid points.
+
+        Computes IRI2020 electron density profiles in parallel across every
+        lat/lon column, then stores results in ``self.grid``.
+
+        Parameters
+        ----------
         ionosphere_model : str
-            The ionospheric model to use. Currently supports:
-            - "iri2020": International Reference Ionosphere 2020 model (default)
-            
-        Raises:
-        -------
-        AttributeError
-            If source is not assigned to the model or 3D grid is not created.
-        ValueError
-            If an unsupported ionosphere model is specified.
-            
-        Notes:
+            Model to use. Currently supports ``"iri2020"`` (default).
+        max_workers : int, optional
+            Maximum number of threads. Defaults to ``os.cpu_count()``.
+
+        Raises
         ------
-        The electron density is computed at each grid point and stored in the
-        'electron_density' field of the grid DataArray. Units are m⁻³.
-        
-        The computation strategy:
-        1. For each unique lat-lon pair in the 3D grid
-        2. Compute a vertical electron density profile using the ionosphere model
-        3. Interpolate/assign the profile to all altitude levels at that location
-        4. Store results in the 3D grid structure
+        AttributeError
+            If source is not assigned or grid not created.
+        ValueError
+            If *ionosphere_model* is not supported.
         """
-        if not hasattr(self, 'source'):
+        if not hasattr(self, "source"):
             raise AttributeError("Source not assigned to the model.")
-        if not hasattr(self, 'grid'):
+        if not hasattr(self, "grid"):
             raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
-            
-        # Supported ionosphere models
+
         supported_models = ["iri2020"]
         if ionosphere_model not in supported_models:
-            raise ValueError(f"Unsupported ionosphere model '{ionosphere_model}'. "
-                           f"Supported models: {supported_models}")
-        
-        # Get grid coordinates
-        latitudes = self.grid.coords['latitude'].values
-        longitudes = self.grid.coords['longitude'].values
-        altitudes = self.grid.coords['altitude'].values
-        
-        # Get source time
-        time = self.source.get_time()
-        
-        print(f"Computing ionospheric electron density using {ionosphere_model}...")
-        print(f"Grid dimensions: {len(latitudes)} lat × {len(longitudes)} lon × {len(altitudes)} alt")
-        
-        # Initialize the electron density array
-        electron_density_3d = np.zeros((len(latitudes), len(longitudes), len(altitudes)))
-        
-        # Compute electron density for each lat-lon location
-        total_profiles = len(latitudes) * len(longitudes)
-        profile_count = 0
-        
-        for i, lat in enumerate(latitudes):
-            for j, lon in enumerate(longitudes):
-                profile_count += 1
-                
-                # Show progress for large grids
-                if total_profiles > 10 and profile_count % max(1, total_profiles // 10) == 0:
-                    print(f"  Progress: {profile_count}/{total_profiles} "
-                          f"({100*profile_count/total_profiles:.0f}%) profiles computed")
-                
-                try:
-                    # Create 1D ionosphere model for this location
-                    iono_1d = Ionosphere1D(lat, lon, altitudes, time, ionosphere_model)
-                    
-                    # Extract electron density profile
-                    ne_profile = iono_1d.ionosphere.electron_density.values
-                    
-                    # Assign to 3D grid
-                    electron_density_3d[i, j, :] = ne_profile
-                    
-                except Exception as e:
-                    print(f"Warning: Failed to compute ionosphere at lat={lat:.2f}, lon={lon:.2f}: {e}")
-                    # Fill with NaN for failed computations
-                    electron_density_3d[i, j, :] = np.nan
-        
-        print("Ionospheric computation completed.")
-        
-        # Convert DataArray to Dataset and add electron density
-        if isinstance(self.grid, xr.DataArray):
-            # Convert to Dataset with the original data as 'grid_points'
-            grid_dataset = self.grid.to_dataset(name='grid_points')
-            # Add electron density as a new variable
-            grid_dataset['electron_density'] = (["latitude", "longitude", "altitude"], electron_density_3d)
-            self.grid = grid_dataset
-        else:
-            # If already a Dataset, use assign
-            self.grid = self.grid.assign(
-                electron_density=(["latitude", "longitude", "altitude"], electron_density_3d)
+            raise ValueError(
+                f"Unsupported ionosphere model '{ionosphere_model}'. "
+                f"Supported models: {supported_models}"
             )
-        
-        # Update grid attributes
-        if not hasattr(self.grid, 'attrs'):
-            self.grid.attrs = {}
-        self.grid.attrs['ionosphere_model'] = ionosphere_model
-        self.grid.attrs['electron_density_units'] = 'm⁻³'
-        self.grid.attrs['electron_density_description'] = f'Electron density from {ionosphere_model} model'
-        
-        # Store ionosphere model info
+
+        latitudes = self.grid.coords["latitude"].values
+        longitudes = self.grid.coords["longitude"].values
+        altitudes = self.grid.coords["altitude"].values
+        time = self.source.get_time()
+
+        arg_list = [
+            (float(lat), float(lon), altitudes, time, ionosphere_model)
+            for lat in latitudes
+            for lon in longitudes
+        ]
+
+        _log.info(
+            "Computing ionospheric electron density (%s): %d profiles "
+            "(%d lat × %d lon × %d alt)",
+            ionosphere_model, len(arg_list),
+            len(latitudes), len(longitudes), len(altitudes),
+        )
+
+        results = [None] * len(arg_list)
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = {ex.submit(_iono_profile_worker, a): k for k, a in enumerate(arg_list)}
+            for fut in as_completed(futures):
+                k = futures[fut]
+                try:
+                    results[k] = fut.result()
+                except Exception as exc:
+                    lat_k, lon_k = arg_list[k][0], arg_list[k][1]
+                    _log.warning(
+                        "Ionosphere failed at lat=%.2f lon=%.2f: %s", lat_k, lon_k, exc
+                    )
+                    results[k] = np.full(len(altitudes), np.nan)
+
+        electron_density_3d = np.empty((len(latitudes), len(longitudes), len(altitudes)))
+        for k, ne in enumerate(results):
+            i, j = divmod(k, len(longitudes))
+            electron_density_3d[i, j, :] = ne
+
+        self.grid["electron_density"] = (
+            ["latitude", "longitude", "altitude"],
+            electron_density_3d,
+        )
+        self.grid["electron_density"].attrs["units"] = "m^-3"
+        self.grid.attrs["ionosphere_model"] = ionosphere_model
+        self.grid.attrs["electron_density_description"] = (
+            f"Electron density from {ionosphere_model} model"
+        )
         self.ionosphere_model = ionosphere_model
+        _log.info("Ionospheric computation completed.")
         
-    def assign_magnetic_field(self, magnetic_field_model="igrf"):
-        """
-        Assign magnetic field parameters to all points in the 3D model domain.
-        
-        This method computes magnetic field components (Be, Bn, Bu) and derived
-        parameters (inclination, declination) at each grid point using the
-        specified magnetic field model.
-        
-        Parameters:
-        -----------
+    def assign_magnetic_field(self, magnetic_field_model="igrf", max_workers=None):
+        """Assign magnetic field parameters to all grid points.
+
+        Computes IGRF magnetic field components and derived parameters in
+        parallel across every lat/lon column, then stores results in
+        ``self.grid``.
+
+        Parameters
+        ----------
         magnetic_field_model : str
-            The magnetic field model to use. Currently supports:
-            - "igrf": International Geomagnetic Reference Field model (default)
-            
-        Raises:
-        -------
-        AttributeError
-            If source is not assigned to the model or 3D grid is not created.
-        ValueError
-            If an unsupported magnetic field model is specified.
-            
-        Notes:
+            Model to use. Currently only ``"igrf"`` (default) is supported.
+        max_workers : int, optional
+            Maximum number of threads. Defaults to ``os.cpu_count()``.
+
+        Raises
         ------
-        The magnetic field components are computed at each grid point and stored in the
-        grid Dataset. The following variables are added:
-        
-        Geodetic components (tangent to Earth's ellipsoid):
-        - 'Be': East component of magnetic field (nT)
-        - 'Bn': North component of magnetic field (nT) 
-        - 'Bu': Up component of magnetic field (nT)
-        
-        Geocentric components (spherical coordinates):
-        - 'Br': Radial component of magnetic field (nT)
-        - 'Btheta': Colatitude component of magnetic field (nT)
-        - 'Bphi': Azimuth component of magnetic field (nT)
-        
-        Derived parameters:
-        - 'inclination': Magnetic inclination angle (degrees)
-        - 'declination': Magnetic declination angle (degrees)
-        
-        The computation strategy:
-        1. For each unique lat-lon pair in the 3D grid
-        2. Compute magnetic field profile using specified model
-        3. Assign computed values to all altitude levels at that location
+        AttributeError
+            If source is not assigned or grid not created.
+        ImportError
+            If ``ppigrf`` is not installed.
+        ValueError
+            If *magnetic_field_model* is not supported.
+
+        Notes
+        -----
+        Variables added to ``self.grid``:
+
+        Geodetic components (nT): ``Be``, ``Bn``, ``Bu``
+        Geocentric components (nT): ``Br``, ``Btheta``, ``Bphi``
+        Derived (degrees): ``inclination``, ``declination``
+        Derived (nT): ``total_field``, ``horizontal_intensity``
         """
-        if not hasattr(self, 'source'):
+        if not hasattr(self, "source"):
             raise AttributeError("Source not assigned to the model.")
-        if not hasattr(self, 'grid'):
+        if not hasattr(self, "grid"):
             raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
-        
         if magnetic_field_model.lower() != "igrf":
             raise ValueError(f"Unsupported magnetic field model: {magnetic_field_model}")
-            
         if not PPIGRF_AVAILABLE:
-            raise ImportError("ppigrf package is not available. Please install it with: pip install ppigrf")
-        
-        print(f"Computing magnetic field using {magnetic_field_model}...")
-        
-        # Get grid dimensions
-        latitudes = self.grid.coords['latitude'].values
-        longitudes = self.grid.coords['longitude'].values
-        altitudes = self.grid.coords['altitude'].values
-        
-        print(f"Grid dimensions: {len(latitudes)} lat × {len(longitudes)} lon × {len(altitudes)} alt")
-        
-        # Initialize 3D arrays for magnetic field parameters
-        Be_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        Bn_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        Bu_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        Br_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        Btheta_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        Bphi_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        inclination_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        declination_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        total_field_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        horizontal_intensity_3d = np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-        
-        # Compute magnetic field for each lat-lon pair
-        total_profiles = len(latitudes) * len(longitudes)
-        computed_profiles = 0
-        
-        for i, lat in enumerate(latitudes):
-            for j, lon in enumerate(longitudes):
+            raise ImportError(
+                "ppigrf is not available. Install with: pip install ppigrf"
+            )
+
+        latitudes = self.grid.coords["latitude"].values
+        longitudes = self.grid.coords["longitude"].values
+        altitudes = self.grid.coords["altitude"].values
+
+        arg_list = [
+            (float(lat), float(lon), altitudes, self.source.get_time(), magnetic_field_model)
+            for lat in latitudes
+            for lon in longitudes
+        ]
+
+        _log.info(
+            "Computing magnetic field (%s): %d profiles (%d lat × %d lon × %d alt)",
+            magnetic_field_model, len(arg_list),
+            len(latitudes), len(longitudes), len(altitudes),
+        )
+
+        results = [None] * len(arg_list)
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = {ex.submit(_magfield_profile_worker, a): k for k, a in enumerate(arg_list)}
+            for fut in as_completed(futures):
+                k = futures[fut]
                 try:
-                    # Create magnetic field model for this location
-                    mag_field = MagneticField1D(lat, lon, altitudes, self.source.get_time(), magnetic_field_model)
-                    
-                    # Extract computed parameters
-                    Be_profile = mag_field.magnetic_field['Be'].values
-                    Bn_profile = mag_field.magnetic_field['Bn'].values
-                    Bu_profile = mag_field.magnetic_field['Bu'].values
-                    Br_profile = mag_field.magnetic_field['Br'].values
-                    Btheta_profile = mag_field.magnetic_field['Btheta'].values
-                    Bphi_profile = mag_field.magnetic_field['Bphi'].values
-                    inc_profile = mag_field.magnetic_field['inclination'].values
-                    dec_profile = mag_field.magnetic_field['declination'].values
-                    total_field_profile = mag_field.magnetic_field['total_field'].values
-                    horizontal_intensity_profile = mag_field.magnetic_field['horizontal_intensity'].values
-                    
-                    # Assign to 3D grids
-                    Be_3d[i, j, :] = Be_profile
-                    Bn_3d[i, j, :] = Bn_profile
-                    Bu_3d[i, j, :] = Bu_profile
-                    Br_3d[i, j, :] = Br_profile
-                    Btheta_3d[i, j, :] = Btheta_profile
-                    Bphi_3d[i, j, :] = Bphi_profile
-                    inclination_3d[i, j, :] = inc_profile
-                    declination_3d[i, j, :] = dec_profile
-                    total_field_3d[i, j, :] = total_field_profile
-                    horizontal_intensity_3d[i, j, :] = horizontal_intensity_profile
-                    
-                    computed_profiles += 1
-                    
-                except Exception as e:
-                    print(f"Warning: Failed to compute magnetic field at lat={lat:.2f}, lon={lon:.2f}: {e}")
-                    # NaN values are already assigned above
-                    
-                # Progress reporting
-                if computed_profiles % max(1, total_profiles // 10) == 0:
-                    progress = int(100 * computed_profiles / total_profiles)
-                    print(f"  Progress: {computed_profiles}/{total_profiles} ({progress}%) profiles computed")
-        
-        print("Magnetic field computation completed.")
-        
-        # Add magnetic field parameters to the grid Dataset
-        if isinstance(self.grid, xr.DataArray):
-            # Convert to Dataset with the original data as 'grid_points'
-            grid_dataset = self.grid.to_dataset(name='grid_points')
-            # Add magnetic field variables
-            grid_dataset['Be'] = (["latitude", "longitude", "altitude"], Be_3d)
-            grid_dataset['Bn'] = (["latitude", "longitude", "altitude"], Bn_3d)
-            grid_dataset['Bu'] = (["latitude", "longitude", "altitude"], Bu_3d)
-            grid_dataset['Br'] = (["latitude", "longitude", "altitude"], Br_3d)
-            grid_dataset['Btheta'] = (["latitude", "longitude", "altitude"], Btheta_3d)
-            grid_dataset['Bphi'] = (["latitude", "longitude", "altitude"], Bphi_3d)
-            grid_dataset['inclination'] = (["latitude", "longitude", "altitude"], inclination_3d)
-            grid_dataset['declination'] = (["latitude", "longitude", "altitude"], declination_3d)
-            grid_dataset['total_field'] = (["latitude", "longitude", "altitude"], total_field_3d)
-            grid_dataset['horizontal_intensity'] = (["latitude", "longitude", "altitude"], horizontal_intensity_3d)
-            self.grid = grid_dataset
-        else:
-            # If already a Dataset, add new variables
-            self.grid['Be'] = (["latitude", "longitude", "altitude"], Be_3d)
-            self.grid['Bn'] = (["latitude", "longitude", "altitude"], Bn_3d)
-            self.grid['Bu'] = (["latitude", "longitude", "altitude"], Bu_3d)
-            self.grid['Br'] = (["latitude", "longitude", "altitude"], Br_3d)
-            self.grid['Btheta'] = (["latitude", "longitude", "altitude"], Btheta_3d)
-            self.grid['Bphi'] = (["latitude", "longitude", "altitude"], Bphi_3d)
-            self.grid['inclination'] = (["latitude", "longitude", "altitude"], inclination_3d)
-            self.grid['declination'] = (["latitude", "longitude", "altitude"], declination_3d)
-            self.grid['total_field'] = (["latitude", "longitude", "altitude"], total_field_3d)
-            self.grid['horizontal_intensity'] = (["latitude", "longitude", "altitude"], horizontal_intensity_3d)
-        
-        # Update grid attributes
-        if not hasattr(self.grid, 'attrs'):
-            self.grid.attrs = {}
-        self.grid.attrs['magnetic_field_model'] = magnetic_field_model
-        self.grid.attrs['magnetic_field_units'] = 'nT'
-        self.grid.attrs['magnetic_angle_units'] = 'degrees'
-        self.grid.attrs['Be_description'] = f'East component of magnetic field from {magnetic_field_model} model'
-        self.grid.attrs['Bn_description'] = f'North component of magnetic field from {magnetic_field_model} model'
-        self.grid.attrs['Bu_description'] = f'Up component of magnetic field from {magnetic_field_model} model'
-        self.grid.attrs['Br_description'] = f'Radial component of magnetic field from {magnetic_field_model} model (geocentric)'
-        self.grid.attrs['Btheta_description'] = f'Colatitude component of magnetic field from {magnetic_field_model} model (geocentric)'
-        self.grid.attrs['Bphi_description'] = f'Azimuth component of magnetic field from {magnetic_field_model} model (geocentric)'
-        self.grid.attrs['inclination_description'] = f'Magnetic inclination from {magnetic_field_model} model'
-        self.grid.attrs['declination_description'] = f'Magnetic declination from {magnetic_field_model} model'
-        
-        # Store magnetic field model info
+                    results[k] = fut.result()
+                except Exception as exc:
+                    lat_k, lon_k = arg_list[k][0], arg_list[k][1]
+                    _log.warning(
+                        "Magnetic field failed at lat=%.2f lon=%.2f: %s", lat_k, lon_k, exc
+                    )
+                    results[k] = {v: np.full(len(altitudes), np.nan) for v in _MAG_VARS}
+
+        arrays = {
+            v: np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
+            for v in _MAG_VARS
+        }
+        for k, profile in enumerate(results):
+            i, j = divmod(k, len(longitudes))
+            for v in _MAG_VARS:
+                arrays[v][i, j, :] = profile[v]
+
+        dims = ["latitude", "longitude", "altitude"]
+        for v in _MAG_VARS:
+            self.grid[v] = (dims, arrays[v])
+
+        _nT_vars = [
+            "Be", "Bn", "Bu", "Br", "Btheta", "Bphi",
+            "total_field", "horizontal_intensity",
+        ]
+        for v in _nT_vars:
+            self.grid[v].attrs["units"] = "nT"
+        for v in ["inclination", "declination"]:
+            self.grid[v].attrs["units"] = "degrees"
+
+        self.grid.attrs["magnetic_field_model"] = magnetic_field_model
         self.magnetic_field_model = magnetic_field_model
+        _log.info("Magnetic field computation completed.")
 
 
         
@@ -1257,387 +1100,20 @@ class Model3D:
         longitudes = np.arange(lon0 - radius_in_degrees, lon0 + radius_in_degrees, self.grid_spacing)
         altitudes = np.arange(0, self.height, self.height_spacing)
 
-        self.grid = xr.DataArray(
-            np.zeros((len(latitudes), len(longitudes), len(altitudes))),
-            coords=[latitudes, longitudes, altitudes],
-            dims=["latitude", "longitude", "altitude"]
+        self.grid = xr.Dataset(
+            {
+                "grid_points": (
+                    ["latitude", "longitude", "altitude"],
+                    np.zeros((len(latitudes), len(longitudes), len(altitudes))),
+                )
+            },
+            coords={
+                "latitude": latitudes,
+                "longitude": longitudes,
+                "altitude": altitudes,
+            },
         )
 
         self.lat_extent = (latitudes[0], latitudes[-1])
         self.lon_extent = (longitudes[0], longitudes[-1])
 
-
-    def plot_source(self):
-        if not hasattr(self, 'source'):
-            raise AttributeError("Source not assigned to the model.")
-        
-        lat = self.source.get_latitude()
-        lon = self.source.get_longitude()
-        
-        if lat is None or lon is None:
-            raise ValueError("Source must have 'latitude' and 'longitude' attributes.")
-        
-        # Convert radius from kilometers to degrees (approximation)
-        radius_in_degrees = self.radius / 111.32  # 1 degree is approximately 111.32 km at the equator
-        
-        fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
-        ax.set_extent([lon - radius_in_degrees, lon + radius_in_degrees, lat - radius_in_degrees, lat + radius_in_degrees], crs=ccrs.PlateCarree())
-        
-        ax.add_feature(cfeature.LAND)
-        ax.add_feature(cfeature.OCEAN)
-        ax.add_feature(cfeature.COASTLINE)
-        ax.add_feature(cfeature.BORDERS, linestyle=':')
-        ax.add_feature(cfeature.LAKES, alpha=0.5)
-        ax.add_feature(cfeature.RIVERS)
-        
-        ax.plot(lon, lat, 'k*', markersize=10, transform=ccrs.PlateCarree(), label='Source')
-        # ax.text(lon, lat, ' Source', horizontalalignment='left', transform=ccrs.PlateCarree())
-        
-        plt.title(f"Source Location: ({lat:.2f}, {lon:.2f})")
-        
-        # Add scale bar
-        # scale_bar(ax, (0.1, 0.05), 100)  # 100 km scale bar
-        
-        # Add legend
-        ax.legend(loc='upper right')
-        
-        plt.show()
-
-    # def scale_bar(ax, location, length):
-    #     """
-    #     Add a scale bar to the map.
-        
-    #     Parameters:
-    #     ax : matplotlib axes object
-    #     The axes to draw the scale bar on.
-    #     location : tuple
-    #     The location of the scale bar in axes coordinates (0 to 1).
-    #     length : float
-    #     The length of the scale bar in kilometers.
-    #     """
-    #     # Get the extent of the map in degrees
-    #     extent = ax.get_extent(ccrs.PlateCarree())
-    #     # Calculate the length of the scale bar in degrees
-    #     length_in_degrees = length / 111.32  # 1 degree is approximately 111.32 km at the equator
-        
-    #     # Create a line for the scale bar
-    #     line = plt.Line2D([location[0], location[0] + length_in_degrees], [location[1], location[1]], 
-    #               transform=ax.transAxes, color='black', linewidth=2)
-    #     ax.add_line(line)
-        
-    #     # Add text for the scale bar
-    #     ax.text(location[0] + length_in_degrees / 2, location[1] - 0.02, f'{length} km', 
-    #         transform=ax.transAxes, horizontalalignment='center', verticalalignment='top')
-
-    def plot_grid(self, show_gridlines=False):
-        if not hasattr(self, 'grid'):
-            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
-        
-        latitudes = self.grid.coords['latitude'].values
-        longitudes = self.grid.coords['longitude'].values
-        
-        fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
-        ax.set_extent([longitudes[0] - self.grid_spacing, longitudes[-1] + self.grid_spacing, 
-                   latitudes[0] - self.grid_spacing, latitudes[-1] + self.grid_spacing], 
-                  crs=ccrs.PlateCarree())
-        
-        ax.add_feature(cfeature.LAND)
-        ax.add_feature(cfeature.OCEAN)
-        ax.add_feature(cfeature.COASTLINE)
-        ax.add_feature(cfeature.BORDERS, linestyle=':')
-        ax.add_feature(cfeature.LAKES, alpha=0.5)
-        ax.add_feature(cfeature.RIVERS)
-        
-        for lat in latitudes:
-            for lon in longitudes:
-                ax.plot(lon, lat, 'ro', markersize=2, transform=ccrs.PlateCarree())
-
-        # Define the scale bar
-        fontprops = fm.FontProperties(size=12)
-        scalebar = AnchoredSizeBar(ax.transData,
-                                1,  # Length of the scale bar in data units
-                                '100 km',  # Label for the scale bar
-                                'lower right',  # Location of the scale bar
-                                pad=0.1,
-                                color='black',
-                                frameon=False,
-                                size_vertical=0.1,
-                                fontproperties=fontprops)
-        
-        # Add the scale bar to the plot
-        ax.add_artist(scalebar)
-        if show_gridlines:
-            ax.gridlines(draw_labels=True)
-        
-        plt.title("Lat/Lon Grid Points")
-        
-        plt.show()
-
-    def plot_grid_3d(self):
-        if not hasattr(self, 'grid'):
-            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
-        
-        latitudes = self.grid.coords['latitude'].values
-        longitudes = self.grid.coords['longitude'].values
-        altitudes = self.grid.coords['altitude'].values
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        
-        lat_grid, lon_grid, alt_grid = np.meshgrid(latitudes, longitudes, altitudes, indexing='ij')
-        
-        ax.scatter(lon_grid, lat_grid, alt_grid, c='k', marker='o', s=1)
-        
-        ax.set_xlabel('Longitude (deg)')
-        ax.set_ylabel('Latitude (deg)')
-        ax.set_zlabel('Altitude (km)')
-        
-        plt.title("3D Grid Points")
-        
-        plt.show()
-        
-    def plot_variable(self, variable='grid_points', altitude_slice=None, **kwargs):
-        """
-        Plot different variables on the model grid.
-        
-        Parameters:
-        -----------
-        variable : str
-            The variable to plot. Options:
-            - 'grid_points': Plot grid points only (default)
-            - 'electron_density': Plot electron density (requires assign_ionosphere)
-            - 'Be': Plot east magnetic field component (requires assign_magnetic_field)
-            - 'Bn': Plot north magnetic field component (requires assign_magnetic_field)
-            - 'Bu': Plot up magnetic field component (requires assign_magnetic_field)
-            - 'Br': Plot radial magnetic field component (requires assign_magnetic_field)
-            - 'Btheta': Plot colatitude magnetic field component (requires assign_magnetic_field)
-            - 'Bphi': Plot azimuth magnetic field component (requires assign_magnetic_field)
-            - 'inclination': Plot magnetic inclination (requires assign_magnetic_field)
-            - 'declination': Plot magnetic declination (requires assign_magnetic_field)
-            - 'density': Plot atmospheric density (requires assign_atmosphere)
-            - 'pressure': Plot atmospheric pressure (requires assign_atmosphere)
-            - 'velocity': Plot atmospheric velocity (requires assign_atmosphere)
-            - 'temperature': Plot atmospheric temperature (requires assign_atmosphere)
-        altitude_slice : float, optional
-            Altitude level (km) to plot for 2D maps. If None, plots all grid points or
-            vertical profiles depending on the variable.
-        **kwargs : dict
-            Additional plotting parameters passed to matplotlib functions.
-            
-        Examples:
-        ---------
-        # Plot grid points
-        model.plot_variable('grid_points')
-        
-        # Plot electron density at 300 km altitude
-        model.plot_variable('electron_density', altitude_slice=300)
-        
-        # Plot magnetic inclination at 100 km altitude
-        model.plot_variable('inclination', altitude_slice=100)
-        
-        # Plot vertical profile at source location
-        model.plot_variable('electron_density')
-        """
-        if not hasattr(self, 'grid'):
-            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
-            
-        if variable == 'grid_points':
-            # Plot grid points (existing functionality)
-            if altitude_slice is None:
-                self.plot_grid_3d()
-            else:
-                self.plot_grid()
-                
-        elif variable == 'electron_density':
-            self._plot_electron_density(altitude_slice, **kwargs)
-            
-        elif variable in ['Be', 'Bn', 'Bu', 'Br', 'Btheta', 'Bphi', 'inclination', 'declination']:
-            self._plot_magnetic_field_variable(variable, altitude_slice, **kwargs)
-            
-        elif variable in ['density', 'pressure', 'velocity', 'temperature']:
-            self._plot_atmospheric_variable(variable, altitude_slice, **kwargs)
-            
-        else:
-            available_vars = ['grid_points', 'electron_density', 'Be', 'Bn', 'Bu', 'inclination', 'declination', 'density', 'pressure', 'velocity', 'temperature']
-            raise ValueError(f"Unknown variable '{variable}'. Available variables: {available_vars}")
-    
-    def _plot_electron_density(self, altitude_slice=None, **kwargs):
-        """Plot electron density."""
-        if 'electron_density' not in self.grid.data_vars:
-            raise AttributeError("Electron density not computed. Call assign_ionosphere() first.")
-        
-        if altitude_slice is not None:
-            # Plot 2D map at specified altitude
-            self._plot_2d_map('electron_density', altitude_slice, 
-                            title_prefix='Electron Density', 
-                            units='m⁻³', log_scale=True, **kwargs)
-        else:
-            # Plot vertical profile at source location
-            self._plot_vertical_profile('electron_density', 
-                                      title_prefix='Electron Density',
-                                      units='m⁻³', log_scale=True, **kwargs)
-    
-    def _plot_atmospheric_variable(self, variable, altitude_slice=None, **kwargs):
-        """Plot atmospheric variables."""
-        if not hasattr(self, 'atmosphere'):
-            raise AttributeError("Atmospheric data not computed. Call assign_atmosphere() first.")
-        
-        # For atmospheric variables, we only have 1D profiles at source location
-        if altitude_slice is not None:
-            print("Warning: altitude_slice not supported for atmospheric variables. "
-                  "Atmospheric data is only available as 1D profile at source location.")
-        
-        # Plot 1D atmospheric profile
-        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
-        
-        atmos_data = self.atmosphere.atmosphere[variable]
-        altitudes = self.atmosphere.alt_km
-        
-        if variable in ['density', 'pressure']:
-            ax.semilogx(atmos_data, altitudes, **kwargs)
-        else:
-            ax.plot(atmos_data, altitudes, **kwargs)
-            
-        var_labels = {
-            'density': 'Density (kg/m³)',
-            'pressure': 'Pressure (Pa)', 
-            'velocity': 'Velocity (km/s)',
-            'temperature': 'Temperature (K)'
-        }
-        
-        ax.set_xlabel(var_labels.get(variable, variable))
-        ax.set_ylabel('Altitude (km)')
-        ax.set_title(f'Atmospheric {variable.title()} Profile\n'
-                    f'Lat: {self.source.get_latitude():.2f}°, '
-                    f'Lon: {self.source.get_longitude():.2f}°')
-        ax.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.show()
-    
-    def _plot_magnetic_field_variable(self, variable, altitude_slice=None, **kwargs):
-        """Plot magnetic field variables."""
-        if variable not in self.grid.data_vars:
-            raise AttributeError(f"Magnetic field variable '{variable}' not computed. Call assign_magnetic_field() first.")
-        
-        # Define variable properties
-        var_properties = {
-            'Be': {'title': 'East Magnetic Field Component', 'units': 'nT', 'log_scale': False},
-            'Bn': {'title': 'North Magnetic Field Component', 'units': 'nT', 'log_scale': False},
-            'Bu': {'title': 'Up Magnetic Field Component', 'units': 'nT', 'log_scale': False},
-            'Br': {'title': 'Radial Magnetic Field Component', 'units': 'nT', 'log_scale': False},
-            'Btheta': {'title': 'Colatitude Magnetic Field Component', 'units': 'nT', 'log_scale': False},
-            'Bphi': {'title': 'Azimuth Magnetic Field Component', 'units': 'nT', 'log_scale': False},
-            'inclination': {'title': 'Magnetic Inclination', 'units': 'degrees', 'log_scale': False},
-            'declination': {'title': 'Magnetic Declination', 'units': 'degrees', 'log_scale': False}
-        }
-        
-        props = var_properties.get(variable, {'title': variable.title(), 'units': '', 'log_scale': False})
-        
-        if altitude_slice is not None:
-            # Plot 2D map at specified altitude
-            self._plot_2d_map(variable, altitude_slice, 
-                            title_prefix=props['title'], 
-                            units=props['units'], 
-                            log_scale=props['log_scale'], **kwargs)
-        else:
-            # Plot vertical profile at source location
-            self._plot_vertical_profile(variable, 
-                                      title_prefix=props['title'],
-                                      units=props['units'], 
-                                      log_scale=props['log_scale'], **kwargs)
-    
-    def _plot_2d_map(self, variable, altitude, title_prefix, units, log_scale=False, **kwargs):
-        """Plot 2D map of a variable at specified altitude."""
-        # Find closest altitude level
-        altitudes = self.grid.coords['altitude'].values
-        alt_idx = np.argmin(np.abs(altitudes - altitude))
-        actual_altitude = altitudes[alt_idx]
-        
-        # Extract 2D slice
-        data_2d = self.grid[variable].isel(altitude=alt_idx)
-        
-        # Create map
-        latitudes = self.grid.coords['latitude'].values
-        longitudes = self.grid.coords['longitude'].values
-        
-        fig, ax = plt.subplots(1, 1, figsize=(12, 8), 
-                              subplot_kw={'projection': ccrs.PlateCarree()})
-        
-        # Set map extent
-        extent = [longitudes.min(), longitudes.max(), 
-                 latitudes.min(), latitudes.max()]
-        ax.set_extent(extent, crs=ccrs.PlateCarree())
-        
-        # Add map features
-        ax.add_feature(cfeature.COASTLINE)
-        ax.add_feature(cfeature.BORDERS, linestyle=':')
-        ax.add_feature(cfeature.LAND, alpha=0.3)
-        ax.add_feature(cfeature.OCEAN, alpha=0.3)
-        
-        # Create meshgrid for plotting
-        lon_grid, lat_grid = np.meshgrid(longitudes, latitudes)
-        
-        # Plot data
-        if log_scale:
-            im = ax.contourf(lon_grid, lat_grid, data_2d.values, 
-                           levels=20, transform=ccrs.PlateCarree(), 
-                           norm=plt.cm.colors.LogNorm(), **kwargs)
-        else:
-            im = ax.contourf(lon_grid, lat_grid, data_2d.values, 
-                           levels=20, transform=ccrs.PlateCarree(), **kwargs)
-        
-        # Add colorbar
-        cbar = fig.colorbar(im, ax=ax, shrink=0.8)
-        cbar.set_label(f'{title_prefix} ({units})')
-        
-        # Plot source location
-        if hasattr(self, 'source'):
-            ax.plot(self.source.get_longitude(), self.source.get_latitude(), 
-                   'k*', markersize=15, transform=ccrs.PlateCarree(), 
-                   label='Source')
-            ax.legend()
-        
-        # Add gridlines
-        ax.gridlines(draw_labels=True, alpha=0.5)
-        
-        plt.title(f'{title_prefix} at {actual_altitude:.1f} km\n'
-                 f'Time: {self.source.get_time() if hasattr(self, "source") else "N/A"}')
-        
-        plt.tight_layout()
-        plt.show()
-    
-    def _plot_vertical_profile(self, variable, title_prefix, units, log_scale=False, **kwargs):
-        """Plot vertical profile of a variable at source location."""
-        if not hasattr(self, 'source'):
-            raise AttributeError("Source not assigned to the model.")
-        
-        # Find closest grid point to source
-        latitudes = self.grid.coords['latitude'].values
-        longitudes = self.grid.coords['longitude'].values
-        
-        lat_idx = np.argmin(np.abs(latitudes - self.source.get_latitude()))
-        lon_idx = np.argmin(np.abs(longitudes - self.source.get_longitude()))
-        
-        # Extract vertical profile
-        profile = self.grid[variable].isel(latitude=lat_idx, longitude=lon_idx)
-        altitudes = self.grid.coords['altitude'].values
-        
-        # Plot profile
-        fig, ax = plt.subplots(1, 1, figsize=(8, 10))
-        
-        if log_scale:
-            ax.semilogx(profile.values, altitudes, **kwargs)
-        else:
-            ax.plot(profile.values, altitudes, **kwargs)
-            
-        ax.set_xlabel(f'{title_prefix} ({units})')
-        ax.set_ylabel('Altitude (km)')
-        ax.set_title(f'{title_prefix} Vertical Profile\n'
-                    f'Lat: {self.source.get_latitude():.2f}°, '
-                    f'Lon: {self.source.get_longitude():.2f}°, '
-                    f'Time: {self.source.get_time()}')
-        ax.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.show()
