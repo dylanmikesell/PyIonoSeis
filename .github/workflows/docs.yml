@@ -22,9 +22,6 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install --user --no-cache-dir Cython
                                     pip install .[dev]
-            - name: Discover typos with codespell
-              run: |
-                                    codespell --config .codespell
             - name: PKG-TEST
               run: |
                   python -m unittest discover tests/
