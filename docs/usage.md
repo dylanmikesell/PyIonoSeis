@@ -32,6 +32,8 @@ model.make_3Dgrid()
 model.assign_atmosphere()       # MSISE-00 → density, pressure, temperature, velocity
 model.assign_ionosphere()       # IRI2020  → electron_density
 model.assign_magnetic_field()   # IGRF     → Be, Bn, Bu, inclination, declination …
+model.trace_rays(type="2d", az_interp=True, az_interp_step=1.0)
+model.assign_wavevector(mapping_mode="nearest")
 
 print(model.grid)  # xr.Dataset with all computed variables
 ```
@@ -104,6 +106,9 @@ model.plot_variable(variable="inclination",       altitude_slice=250, cmap="cool
 # Atmospheric profiles
 model.plot_variable(variable="temperature")
 model.plot_variable(variable="velocity")
+
+# Wavevector components (see the wavevector guide for full examples)
+model.plot_variable(variable="kr", altitude_slice=300)
 ```
 
 ## Spherical Ray Tracing
@@ -139,6 +144,23 @@ Key variables in `model.raypaths`:
 - `ray_lat_deg`, `ray_lon_deg`, `ray_alt_km` — 3-D position
 - `travel_time_s` — one-way travel time in seconds
 - `transport_amplitude_db`, `absorption_db` — amplitude descriptors
+
+## Wavevector Mapping
+
+Map geometry-based wavevector components from raypaths to the grid. Use nearest
+neighbor for speed, or weighted averaging for smoother fields.
+
+```python
+model.assign_wavevector(
+    mapping_mode="nearest",
+    interpolation_radius_km=50.0,
+    altitude_window_km=50.0,
+    smoothing_radius_km=0.0,
+)
+```
+
+See the full workflow and plotting examples in
+[Wavevector Mapping](wavevector.md).
 
 ## Loading Previously Computed Rays
 

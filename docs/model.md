@@ -47,12 +47,67 @@ flowchart LR
     E --> F[assign_ionosphere]
     F --> G[assign_magnetic_field]
     G --> H[trace_rays]
-    H --> I[plot_variable / analysis]
+    H --> I[assign_wavevector]
+    I --> J[plot_variable / analysis]
 ```
 
 Each step enriches `model.grid` (`xr.Dataset`) with new physical variables.
 Steps are independent — you can stop at any point and work with the data
 already computed.
+
+## Quick Start Example
+
+Build a grid and populate it with atmosphere, ionosphere, and magnetic field
+outputs. Enable logging to see progress as the 1-D profiles are computed in
+parallel.
+
+```python
+import logging
+
+from pyionoseis.model import Model3D
+from pyionoseis.source import EarthquakeSource
+
+logging.basicConfig(level=logging.INFO)
+
+source = EarthquakeSource("event.toml")
+model = Model3D("event.toml")
+
+model.assign_source(source)
+model.make_3Dgrid()
+model.assign_atmosphere()
+model.assign_ionosphere()
+model.assign_magnetic_field()
+model.trace_rays(type="2d", az_interp=True, az_interp_step=1.0)
+model.assign_wavevector(mapping_mode="nearest")
+
+print(model.grid)
+```
+
+## Plotting Examples
+
+Generate common visualizations directly from the model object. These examples
+assume `model.grid` has already been populated.
+
+```python
+model.plot_source()
+model.plot_grid(show_gridlines=True)
+
+model.plot_variable(variable="electron_density", altitude_slice=300)
+model.plot_variable(variable="temperature")
+model.plot_variable(variable="inclination", altitude_slice=250, cmap="coolwarm")
+
+# Wavevector components
+model.plot_variable(variable="kr", altitude_slice=300)
+```
+
+## Example Output Images
+
+The images below are synthetic examples to show the expected layout and
+styling of the plots produced by `ModelPlotMixin`.
+
+![Example electron density slice](assets/model-grid-example.png)
+
+![Example vertical profile](assets/model-profile-example.png)
 
 ## Grid Data Model
 
@@ -78,6 +133,7 @@ Variables are added progressively:
 | `Br`, `Btheta`, `Bphi` | nT | `assign_magnetic_field()` |
 | `inclination`, `declination` | degrees | `assign_magnetic_field()` |
 | `total_field`, `horizontal_intensity` | nT | `assign_magnetic_field()` |
+| `kr`, `kt`, `kp` | — | `assign_wavevector()` |
 
 ## Supporting Modules
 
@@ -96,6 +152,12 @@ it, so plots are available directly on the model object. The mixin can also
 be used standalone in testing scenarios.
 
 ::: pyionoseis.model_plot.ModelPlotMixin
+
+## Wavevector Mapping
+
+Wavevector mapping adds `kr`, `kt`, and `kp` to the grid after ray tracing.
+For full examples and performance guidance, see
+[Wavevector Mapping](wavevector.md).
 
 ## API Reference
 

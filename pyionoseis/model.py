@@ -16,6 +16,7 @@ import xarray as xr
 
 from pyionoseis import infraga as infraga_tools
 from pyionoseis import model_io
+from pyionoseis import wavevector as wavevector_tools
 from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
 from pyionoseis.ionosphere import Ionosphere1D
@@ -874,6 +875,102 @@ class Model3D(ModelPlotMixin):
         self.grid.attrs["magnetic_field_model"] = magnetic_field_model
         self.magnetic_field_model = magnetic_field_model
         _log.info("Magnetic field computation completed.")
+
+    def assign_wavevector(
+        self,
+        interpolation_radius_km=50.0,
+        mapping_mode="nearest",
+        use_kdtree=True,
+        altitude_window_km=None,
+        smoothing_radius_km=20.0,
+        min_points=3,
+        weight_power=2.0,
+        chunk_size=1024,
+        turning_point=True,
+        keep_ray_wavevectors=False,
+    ):
+        """Assign geometry-based wavevector components to the 3-D grid.
+
+        Parameters
+        ----------
+        interpolation_radius_km : float, optional
+            Neighborhood radius (km) used when mapping ray directions to the grid.
+        mapping_mode : str, optional
+            Mapping mode, either ``"nearest"`` or ``"weighted"``.
+        use_kdtree : bool, optional
+            If True, use a KD-tree for nearest-neighbor lookups when available.
+        altitude_window_km : float, optional
+            Vertical window (km) to limit ray candidates. Defaults to
+            ``interpolation_radius_km`` when omitted.
+        smoothing_radius_km : float, optional
+            Smoothing radius (km) applied along rays before differentiation.
+        min_points : int, optional
+            Minimum number of ray points required to assign a grid cell.
+        weight_power : float, optional
+            Power for distance taper ``(1 - d / r) ** weight_power``.
+        chunk_size : int, optional
+            Grid points processed per chunk to limit memory usage.
+        turning_point : bool, optional
+            If True, enforce ``k_r = 0`` at detected turning points.
+        keep_ray_wavevectors : bool, optional
+            If True, retain cached ray wavevectors for reuse.
+
+        Raises
+        ------
+        AttributeError
+            If raypaths are missing or the 3-D grid is not created.
+        """
+        if self.raypaths is None:
+            raise AttributeError("Raypaths not available. Call trace_rays() first.")
+        if not hasattr(self, "grid"):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+
+        cache_key = (float(smoothing_radius_km), bool(turning_point))
+        ray_wavevectors = None
+        if hasattr(self, "_ray_wavevectors_cache"):
+            cached = self._ray_wavevectors_cache
+            if cached is not None and cached.get("key") == cache_key:
+                ray_wavevectors = cached.get("data")
+
+        if ray_wavevectors is None:
+            ray_wavevectors = wavevector_tools.compute_ray_wavevectors(
+                self.raypaths,
+                smoothing_radius_km=float(smoothing_radius_km),
+                turning_point=bool(turning_point),
+            )
+            self._ray_wavevectors_cache = {"key": cache_key, "data": ray_wavevectors}
+
+        grid_wavevectors = wavevector_tools.map_wavevector_to_grid(
+            self.grid,
+            ray_wavevectors,
+            interpolation_radius_km=float(interpolation_radius_km),
+            mapping_mode=str(mapping_mode),
+            use_kdtree=bool(use_kdtree),
+            altitude_window_km=altitude_window_km,
+            min_points=int(min_points),
+            weight_power=float(weight_power),
+            chunk_size=int(chunk_size),
+        )
+
+        if not keep_ray_wavevectors:
+            self._ray_wavevectors_cache = None
+
+        for var in ["kr", "kt", "kp", "wavevector_raypoint_count"]:
+            self.grid[var] = grid_wavevectors[var]
+
+        self.grid.attrs["wavevector_method"] = "geometry_tangent"
+        self.grid.attrs["wavevector_interpolation_radius_km"] = float(
+            interpolation_radius_km
+        )
+        self.grid.attrs["wavevector_mapping_mode"] = str(mapping_mode)
+        self.grid.attrs["wavevector_use_kdtree"] = bool(use_kdtree)
+        if altitude_window_km is None:
+            altitude_window_km = float(interpolation_radius_km)
+        self.grid.attrs["wavevector_altitude_window_km"] = float(altitude_window_km)
+        self.grid.attrs["wavevector_smoothing_radius_km"] = float(smoothing_radius_km)
+        self.grid.attrs["wavevector_min_points"] = int(min_points)
+        self.grid.attrs["wavevector_turning_point_enforced"] = bool(turning_point)
+        _log.info("Wavevector assignment completed.")
 
 
         

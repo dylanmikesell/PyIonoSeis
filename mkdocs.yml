@@ -78,6 +78,9 @@ nav:
     - Contributing: contributing.md
     - FAQ: faq.md
     - Changelog: changelog.md
+    - Model: model.md
+    - Wavevector Mapping: wavevector.md
+    - Wasp3D Wave Vector: wasp3d-wavevector.md
     - Report Issues: https://github.com/dylanmikesell/pyionoseis/issues
     - Examples:
         - examples/intro.ipynb

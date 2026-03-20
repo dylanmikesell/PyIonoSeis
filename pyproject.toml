@@ -30,7 +30,7 @@ pyionoseis = "pyionoseis.cli:main"
 
 [project.optional-dependencies]
 all = [
-    "pyionoseis[extra,infraga]",
+    "pyionoseis[extra,infraga,wavevector]",
 ]
 
 extra = [
@@ -41,6 +41,10 @@ extra = [
 
 infraga = [
     "infraga @ git+https://github.com/LANL-Seismoacoustics/infraGA.git",
+]
+
+wavevector = [
+    "scipy",
 ]
 
 
