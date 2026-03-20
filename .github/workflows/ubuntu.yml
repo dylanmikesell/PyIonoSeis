@@ -8,11 +8,12 @@ on:
             - main
             - master
 
+env:
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 name: Linux build
 jobs:
     py-check:
-            env:
-                FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         runs-on: ${{ matrix.config.os }}
         name: ${{ matrix.config.os }} (${{ matrix.config.py }})
         strategy:
