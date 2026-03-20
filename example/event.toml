@@ -14,3 +14,8 @@ ionosphere = "iri2020"  # ionospheric model to use (default: "iri2020")
 grid_spacing = 1.0  # grid spacing of the model (default: 1.0 degrees)
 grid_units = "degrees"  # units of the grid spacing (degrees/km)
 height_spacing = 50.0  # (km) height grid spacing (default: 20.0)
+
+[continuity]
+t0_s = 0.0
+tmax_s = 3600.0
+dt_s = 10.0

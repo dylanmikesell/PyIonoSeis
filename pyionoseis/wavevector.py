@@ -521,3 +521,197 @@ def map_wavevector_to_grid(
     out.attrs["wavevector_weight_power"] = float(weight_power)
 
     return out
+
+
+def map_ray_scalar_to_grid(
+    grid: xr.Dataset,
+    raypaths: xr.Dataset,
+    ray_var: str,
+    output_name: str | None = None,
+    interpolation_radius_km: float = 50.0,
+    mapping_mode: str = "nearest",
+    use_kdtree: bool = True,
+    altitude_window_km: float | None = None,
+    min_points: int = 3,
+    weight_power: float = 2.0,
+    chunk_size: int = 1024,
+    count_name: str | None = None,
+) -> xr.Dataset:
+    """Map a scalar raypath variable onto the 3-D grid.
+
+    Parameters
+    ----------
+    grid : xr.Dataset
+        Grid dataset with coordinates ``latitude``, ``longitude``, ``altitude``.
+    raypaths : xr.Dataset
+        Raypath dataset containing ``ray_lat_deg``, ``ray_lon_deg``, ``ray_alt_km``.
+    ray_var : str
+        Name of scalar variable in ``raypaths`` to map.
+    output_name : str, optional
+        Variable name to use in the output dataset. Defaults to ``ray_var``.
+    interpolation_radius_km : float, optional
+        Neighborhood radius (km) for local averaging.
+    mapping_mode : str, optional
+        Mapping mode, either ``"nearest"`` or ``"weighted"``.
+    use_kdtree : bool, optional
+        If True, use a KD-tree for nearest-neighbor lookups when available.
+    altitude_window_km : float, optional
+        Vertical window (km) to limit ray candidates. Defaults to
+        ``interpolation_radius_km`` when omitted.
+    min_points : int, optional
+        Minimum number of ray points required to assign a grid value.
+    weight_power : float, optional
+        Power for the distance taper ``(1 - d / r) ** weight_power``.
+    chunk_size : int, optional
+        Grid points processed per chunk to control memory usage.
+    count_name : str, optional
+        Variable name to use for raypoint counts. Defaults to
+        ``"<output_name>_raypoint_count"``.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with the mapped scalar and a raypoint count variable.
+    """
+    if interpolation_radius_km <= 0.0:
+        raise ValueError("interpolation_radius_km must be > 0.")
+    if min_points < 1:
+        raise ValueError("min_points must be >= 1.")
+    if mapping_mode not in {"nearest", "weighted"}:
+        raise ValueError("mapping_mode must be 'nearest' or 'weighted'.")
+    if altitude_window_km is None:
+        altitude_window_km = float(interpolation_radius_km)
+    if altitude_window_km <= 0.0:
+        raise ValueError("altitude_window_km must be > 0.")
+    if mapping_mode == "nearest" and use_kdtree and not SCIPY_AVAILABLE:
+        raise ImportError(
+            "scipy is required for KD-tree nearest-neighbor mapping. "
+            "Install with the optional dependency 'pyionoseis[wavevector]'."
+        )
+    if ray_var not in raypaths:
+        raise KeyError(f"Raypaths variable '{ray_var}' not found.")
+
+    output_name = output_name or ray_var
+    count_name = count_name or f"{output_name}_raypoint_count"
+
+    lat = grid.coords["latitude"].values.astype(float)
+    lon = grid.coords["longitude"].values.astype(float)
+    alt = grid.coords["altitude"].values.astype(float)
+
+    lat_grid, lon_grid, alt_grid = np.meshgrid(lat, lon, alt, indexing="ij")
+    flat_lat = lat_grid.ravel()
+    flat_lon = lon_grid.ravel()
+    flat_alt = alt_grid.ravel()
+
+    ray_lat = raypaths["ray_lat_deg"].values.astype(float)
+    ray_lon = raypaths["ray_lon_deg"].values.astype(float)
+    ray_alt = raypaths["ray_alt_km"].values.astype(float)
+    ray_values = raypaths[ray_var].values.astype(float)
+
+    valid = (
+        np.isfinite(ray_lat)
+        & np.isfinite(ray_lon)
+        & np.isfinite(ray_alt)
+        & np.isfinite(ray_values)
+    )
+    ray_lat = ray_lat[valid]
+    ray_lon = ray_lon[valid]
+    ray_alt = ray_alt[valid]
+    ray_values = ray_values[valid]
+
+    ray_pos = _lat_lon_alt_to_ecef(ray_lat, ray_lon, ray_alt)
+
+    out_scalar = np.full(flat_lat.size, np.nan)
+    out_count = np.zeros(flat_lat.size, dtype=int)
+
+    for start in range(0, flat_lat.size, chunk_size):
+        end = min(start + chunk_size, flat_lat.size)
+        chunk_lat = flat_lat[start:end]
+        chunk_lon = flat_lon[start:end]
+        chunk_alt = flat_alt[start:end]
+
+        alt_min = chunk_alt.min() - altitude_window_km
+        alt_max = chunk_alt.max() + altitude_window_km
+        alt_mask = (ray_alt >= alt_min) & (ray_alt <= alt_max)
+        if not np.any(alt_mask):
+            continue
+
+        chunk_ray_pos = ray_pos[alt_mask]
+        chunk_ray_values = ray_values[alt_mask]
+        chunk_ray_alt = ray_alt[alt_mask]
+
+        grid_pos = _lat_lon_alt_to_ecef(chunk_lat, chunk_lon, chunk_alt)
+
+        if mapping_mode == "nearest":
+            if use_kdtree:
+                tree = cKDTree(chunk_ray_pos)
+                dist, idx = tree.query(
+                    grid_pos,
+                    distance_upper_bound=float(interpolation_radius_km),
+                )
+                valid = np.isfinite(dist) & (dist <= float(interpolation_radius_km))
+                if np.any(valid):
+                    ray_alt_sel = chunk_ray_alt[idx[valid]]
+                    alt_ok = np.abs(ray_alt_sel - chunk_alt[valid]) <= altitude_window_km
+                    valid_idx = np.where(valid)[0][alt_ok]
+                    if valid_idx.size:
+                        chosen = idx[valid][alt_ok]
+                        out_count[start:end][valid_idx] = 1
+                        out_scalar[start:end][valid_idx] = chunk_ray_values[chosen]
+            else:
+                diff = grid_pos[:, None, :] - chunk_ray_pos[None, :, :]
+                dist = np.linalg.norm(diff, axis=2)
+                alt_delta = np.abs(chunk_alt[:, None] - chunk_ray_alt[None, :])
+                dist = np.where(alt_delta <= altitude_window_km, dist, np.inf)
+                min_idx = np.argmin(dist, axis=1)
+                min_dist = dist[np.arange(dist.shape[0]), min_idx]
+
+                valid = np.isfinite(min_dist) & (min_dist <= float(interpolation_radius_km))
+                if np.any(valid):
+                    out_count[start:end][valid] = 1
+                    out_scalar[start:end][valid] = chunk_ray_values[min_idx[valid]]
+        else:
+            diff = grid_pos[:, None, :] - chunk_ray_pos[None, :, :]
+            dist = np.linalg.norm(diff, axis=2)
+            alt_delta = np.abs(chunk_alt[:, None] - chunk_ray_alt[None, :])
+
+            within = (dist <= interpolation_radius_km) & (alt_delta <= altitude_window_km)
+            out_count[start:end] = np.count_nonzero(within, axis=1)
+
+            weight = np.where(
+                within,
+                (1.0 - dist / float(interpolation_radius_km)) ** weight_power,
+                0.0,
+            )
+            weight_sum = weight.sum(axis=1)
+            has_points = out_count[start:end] >= int(min_points)
+
+            if np.any(has_points):
+                weighted = weight[has_points] @ chunk_ray_values
+                out_scalar[start:end][has_points] = weighted / weight_sum[has_points]
+
+    out = xr.Dataset(
+        {
+            output_name: (
+                ("latitude", "longitude", "altitude"),
+                out_scalar.reshape(lat.size, lon.size, alt.size),
+            ),
+            count_name: (
+                ("latitude", "longitude", "altitude"),
+                out_count.reshape(lat.size, lon.size, alt.size),
+            ),
+        },
+        coords={"latitude": lat, "longitude": lon, "altitude": alt},
+    )
+
+    if "units" in raypaths[ray_var].attrs:
+        out[output_name].attrs["units"] = raypaths[ray_var].attrs["units"]
+    out[count_name].attrs["units"] = "count"
+    out.attrs["ray_scalar_interpolation_radius_km"] = float(interpolation_radius_km)
+    out.attrs["ray_scalar_mapping_mode"] = str(mapping_mode)
+    out.attrs["ray_scalar_use_kdtree"] = bool(use_kdtree)
+    out.attrs["ray_scalar_altitude_window_km"] = float(altitude_window_km)
+    out.attrs["ray_scalar_min_points"] = int(min_points)
+    out.attrs["ray_scalar_weight_power"] = float(weight_power)
+
+    return out

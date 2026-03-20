@@ -48,7 +48,8 @@ flowchart LR
     F --> G[assign_magnetic_field]
     G --> H[trace_rays]
     H --> I[assign_wavevector]
-    I --> J[plot_variable / analysis]
+    I --> J[assign_continuity]
+    J --> K[plot_variable / analysis]
 ```
 
 Each step enriches `model.grid` (`xr.Dataset`) with new physical variables.
@@ -79,6 +80,7 @@ model.assign_ionosphere()
 model.assign_magnetic_field()
 model.trace_rays(type="2d", az_interp=True, az_interp_step=1.0)
 model.assign_wavevector(mapping_mode="nearest")
+model.assign_continuity(output_dir="continuity_output")
 
 print(model.grid)
 ```
@@ -134,6 +136,9 @@ Variables are added progressively:
 | `inclination`, `declination` | degrees | `assign_magnetic_field()` |
 | `total_field`, `horizontal_intensity` | nT | `assign_magnetic_field()` |
 | `kr`, `kt`, `kp` | — | `assign_wavevector()` |
+
+Continuity outputs are stored separately on `model.continuity`, which is a
+4-D `xr.Dataset` with dimensions `(latitude, longitude, altitude, time)`.
 
 ## Supporting Modules
 

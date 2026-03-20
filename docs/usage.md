@@ -34,6 +34,7 @@ model.assign_ionosphere()       # IRI2020  → electron_density
 model.assign_magnetic_field()   # IGRF     → Be, Bn, Bu, inclination, declination …
 model.trace_rays(type="2d", az_interp=True, az_interp_step=1.0)
 model.assign_wavevector(mapping_mode="nearest")
+model.assign_continuity(output_dir="continuity_output")
 
 print(model.grid)  # xr.Dataset with all computed variables
 ```
@@ -85,6 +86,12 @@ atmosphere     = "msise00"
 ionosphere     = "iri2020"
 grid_spacing   = 1.0        # degrees
 height_spacing = 50.0       # km
+
+[continuity]
+# seconds
+t0_s = 0.0
+tmax_s = 3600.0
+dt_s = 10.0
 ```
 
 ## Visualisation

@@ -144,3 +144,37 @@ class TestWavevectorTools(unittest.TestCase):
 
         self.assertTrue(np.isnan(mapped["kr"].values).all())
         self.assertEqual(mapped["wavevector_raypoint_count"].values.item(), 0)
+
+    def test_map_ray_scalar_to_grid_nearest_value(self):
+        """Scalar ray mapping assigns the nearest ray value."""
+        lat = np.linspace(0.0, 0.1, 5)
+        lon = np.zeros_like(lat)
+        alt = np.full_like(lat, 100.0)
+        time = np.linspace(0.0, 40.0, lat.size)
+
+        raypaths = xr.Dataset(
+            {
+                "ray_lat_deg": ("ray_point", lat),
+                "ray_lon_deg": ("ray_point", lon),
+                "ray_alt_km": ("ray_point", alt),
+                "travel_time_s": ("ray_point", time),
+            }
+        )
+
+        grid = xr.Dataset(
+            coords={"latitude": [0.05], "longitude": [0.0], "altitude": [100.0]}
+        )
+        mapped = wavevector_tools.map_ray_scalar_to_grid(
+            grid,
+            raypaths,
+            ray_var="travel_time_s",
+            output_name="travel_time_s",
+            interpolation_radius_km=200.0,
+            mapping_mode="nearest",
+            use_kdtree=False,
+            min_points=1,
+            chunk_size=8,
+        )
+
+        self.assertAlmostEqual(mapped["travel_time_s"].values.item(), 20.0, places=6)
+        self.assertEqual(mapped["travel_time_s_raypoint_count"].values.item(), 1)

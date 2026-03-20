@@ -15,6 +15,37 @@ A python package for modeling and anlaysis of coseismic ionospheric disturbances
 - 3D ionosphere and magnetic field model building
 - Optional spherical infraGA ray tracing via `Model3D.trace_rays(...)`
 
+## Development Environment
+
+- Canonical dev environment is `.venv` at the repo root.
+- `pyionoseis-dev/` is treated as legacy; remove it if you no longer use it.
+
+## Testing
+
+From a repo checkout:
+
+```bash
+python scripts/run_tests.py
+```
+
+This is equivalent to:
+
+```bash
+python -m unittest discover tests/
+```
+
+Post-install testing (tests are packaged):
+
+```bash
+pyionoseis-test
+```
+
+Dev install with tooling:
+
+```bash
+pip install -e .[dev]
+```
+
 ## Optional infraGA Dependency
 
 PyIonoSeis requires integration with infraGA.

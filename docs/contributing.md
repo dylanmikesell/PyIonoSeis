@@ -56,21 +56,19 @@ Ready to contribute? Here's how to set up pyionoseis for local development.
     $ git clone git@github.com:your_name_here/pyionoseis.git
     ```
 
-3.  Install your local copy into a virtualenv. Assuming you have
-    virtualenvwrapper installed, this is how you set up your fork for
-    local development:
+3.  Install your local copy into a virtualenv. Use `.venv` at the repo
+    root for consistency:
 
-    ```shell
-    $ python -m venv pyionoseis-dev
-    $ source pyionoseis-dev/bin/activate
-    $ pip install -r requirements_dev.txt
-    $ pip install -e .
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate
+    pip install -e .[dev]
     ```
-    
-    On Windows activate with this instead
 
-    ```shell
-    pyionoseis-dev\Scripts\activate
+    On Windows activate with this instead:
+
+    ```bash
+    .venv\Scripts\activate
     ```
 
 4.  Create a branch for local development:
@@ -82,15 +80,12 @@ Ready to contribute? Here's how to set up pyionoseis for local development.
     Now you can make your changes locally.
 
 5.  When you're done making changes, check that your changes pass flake8
-    and the tests, including testing other Python versions with tox:
+    and the tests:
 
-    ```shell
-    $ flake8 pyionoseis tests
-    $ python setup.py test or pytest
-    $ tox
+    ```bash
+    flake8 pyionoseis tests
+    python scripts/run_tests.py
     ```
-
-    To get flake8 and tox, just pip install them into your virtualenv.
 
 6.  Commit your changes and push your branch to GitHub:
 

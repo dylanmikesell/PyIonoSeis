@@ -15,6 +15,7 @@ import toml
 import xarray as xr
 
 from pyionoseis import infraga as infraga_tools
+from pyionoseis import continuity as continuity_tools
 from pyionoseis import model_io
 from pyionoseis import wavevector as wavevector_tools
 from pyionoseis.atmosphere import Atmosphere1D
@@ -128,6 +129,10 @@ class Model3D(ModelPlotMixin):
             self.raypaths = None
             self.ray_arrivals = None
             self.raytrace_run_dir = None
+            self.continuity_t0_s = None
+            self.continuity_tmax_s = None
+            self.continuity_dt_s = None
+            self.continuity = None
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -143,6 +148,12 @@ class Model3D(ModelPlotMixin):
         if units == "km":
             self.grid_spacing = self.grid_spacing / 111.32  # 1 degree is approximately 111.32 km at the equator
         self.height_spacing = model.get('height_spacing', 20.0) 
+
+        continuity = data.get("continuity", {})
+        self.continuity_t0_s = continuity.get("t0_s")
+        self.continuity_tmax_s = continuity.get("tmax_s")
+        self.continuity_dt_s = continuity.get("dt_s")
+        self.continuity = None
         
 
     def assign_source(self, source):
@@ -971,6 +982,245 @@ class Model3D(ModelPlotMixin):
         self.grid.attrs["wavevector_min_points"] = int(min_points)
         self.grid.attrs["wavevector_turning_point_enforced"] = bool(turning_point)
         _log.info("Wavevector assignment completed.")
+
+    def assign_continuity(
+        self,
+        t0_s=None,
+        tmax_s=None,
+        dt_s=None,
+        b=1.0,
+        divergence_flag=3,
+        geomag_flag=True,
+        interpolation_radius_km=50.0,
+        mapping_mode="nearest",
+        use_kdtree=True,
+        altitude_window_km=None,
+        min_points=3,
+        weight_power=2.0,
+        chunk_size=1024,
+        output_dir=None,
+        reuse_existing=True,
+        force_recompute=False,
+        cache_id=None,
+        store_neutral_velocity=True,
+    ):
+        """Compute electron density perturbations via the continuity equation.
+
+        Parameters
+        ----------
+        t0_s : float, optional
+            Start time in seconds. Defaults to ``[continuity].t0_s``.
+        tmax_s : float, optional
+            End time in seconds. Defaults to ``[continuity].tmax_s``.
+        dt_s : float, optional
+            Time step in seconds. Defaults to ``[continuity].dt_s``.
+        b : float, optional
+            Pulse broadening coefficient in seconds per second.
+        divergence_flag : int, optional
+            ``1`` for radial-only divergence, ``3`` for full 3-D divergence.
+        geomag_flag : bool, optional
+            If True, project the neutral velocity along the magnetic field.
+        interpolation_radius_km : float, optional
+            Neighborhood radius (km) for ray scalar mapping.
+        mapping_mode : str, optional
+            Mapping mode, either ``"nearest"`` or ``"weighted"``.
+        use_kdtree : bool, optional
+            If True, use a KD-tree for nearest-neighbor lookups when available.
+        altitude_window_km : float, optional
+            Vertical window (km) to limit ray candidates.
+        min_points : int, optional
+            Minimum number of ray points required to assign a grid cell.
+        weight_power : float, optional
+            Power for distance taper ``(1 - d / r) ** weight_power``.
+        chunk_size : int, optional
+            Grid points processed per chunk to limit memory usage.
+        output_dir : str or Path, optional
+            Directory where continuity outputs are saved.
+        reuse_existing : bool, optional
+            If True, reuse cached results when signatures match.
+        force_recompute : bool, optional
+            If True, bypass cache checks and recompute.
+        cache_id : str, optional
+            Optional cache token to isolate output files.
+        store_neutral_velocity : bool, optional
+            If True, store neutral velocity components for visualization.
+
+        Returns
+        -------
+        xr.Dataset
+            Continuity output with ``dNe`` and optional neutral velocity.
+        """
+        if self.raypaths is None:
+            raise AttributeError("Raypaths not available. Call trace_rays() first.")
+        if not hasattr(self, "grid"):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+        for name in ["kr", "kt", "kp", "electron_density"]:
+            if name not in self.grid:
+                raise AttributeError(
+                    f"Grid variable '{name}' is missing. Run assign_wavevector() and "
+                    "assign_ionosphere() first."
+                )
+
+        if t0_s is None:
+            t0_s = self.continuity_t0_s
+        if tmax_s is None:
+            tmax_s = self.continuity_tmax_s
+        if dt_s is None:
+            dt_s = self.continuity_dt_s
+        if t0_s is None or tmax_s is None or dt_s is None:
+            raise ValueError(
+                "Continuity timing parameters are missing. Set [continuity] in the TOML "
+                "or pass t0_s/tmax_s/dt_s explicitly."
+            )
+
+        if altitude_window_km is None:
+            altitude_window_km = float(interpolation_radius_km)
+
+        raypaths = self.raypaths
+        if "travel_time_s" not in self.grid:
+            travel_map = wavevector_tools.map_ray_scalar_to_grid(
+                self.grid,
+                raypaths,
+                ray_var="travel_time_s",
+                output_name="travel_time_s",
+                interpolation_radius_km=float(interpolation_radius_km),
+                mapping_mode=str(mapping_mode),
+                use_kdtree=bool(use_kdtree),
+                altitude_window_km=float(altitude_window_km),
+                min_points=int(min_points),
+                weight_power=float(weight_power),
+                chunk_size=int(chunk_size),
+            )
+            self.grid["travel_time_s"] = travel_map["travel_time_s"]
+            self.grid["travel_time_s_raypoint_count"] = travel_map[
+                "travel_time_s_raypoint_count"
+            ]
+            self.grid["travel_time_s"].attrs["units"] = "s"
+
+        if "infraga_amplitude" not in self.grid:
+            if "transport_amplitude_db" not in raypaths:
+                raise KeyError("Raypaths missing transport_amplitude_db.")
+            amp_db = raypaths["transport_amplitude_db"].values.astype(float)
+            amp_linear = np.power(10.0, amp_db / 20.0)
+            amp_paths = raypaths.copy()
+            amp_paths["transport_amplitude_linear"] = (
+                ["ray_point"],
+                amp_linear,
+            )
+            amp_paths["transport_amplitude_linear"].attrs["units"] = "dimensionless"
+
+            amp_map = wavevector_tools.map_ray_scalar_to_grid(
+                self.grid,
+                amp_paths,
+                ray_var="transport_amplitude_linear",
+                output_name="infraga_amplitude",
+                interpolation_radius_km=float(interpolation_radius_km),
+                mapping_mode=str(mapping_mode),
+                use_kdtree=bool(use_kdtree),
+                altitude_window_km=float(altitude_window_km),
+                min_points=int(min_points),
+                weight_power=float(weight_power),
+                chunk_size=int(chunk_size),
+            )
+            self.grid["infraga_amplitude"] = amp_map["infraga_amplitude"]
+            self.grid["infraga_amplitude_raypoint_count"] = amp_map[
+                "infraga_amplitude_raypoint_count"
+            ]
+            self.grid["infraga_amplitude"].attrs["units"] = "dimensionless"
+
+        signature_payload = {
+            "signature_version": 1,
+            "continuity": {
+                "t0_s": float(t0_s),
+                "tmax_s": float(tmax_s),
+                "dt_s": float(dt_s),
+                "b": float(b),
+                "divergence_flag": int(divergence_flag),
+                "geomag_flag": bool(geomag_flag),
+                "store_neutral_velocity": bool(store_neutral_velocity),
+            },
+            "mapping": {
+                "interpolation_radius_km": float(interpolation_radius_km),
+                "mapping_mode": str(mapping_mode),
+                "use_kdtree": bool(use_kdtree),
+                "altitude_window_km": float(altitude_window_km),
+                "min_points": int(min_points),
+                "weight_power": float(weight_power),
+                "chunk_size": int(chunk_size),
+            },
+            "ray_signature_hash": self.raypaths.attrs.get("raytrace_signature_hash"),
+            "grid": {
+                "latitude_sha256": model_io.array_sha256(
+                    self.grid.coords["latitude"].values
+                ),
+                "longitude_sha256": model_io.array_sha256(
+                    self.grid.coords["longitude"].values
+                ),
+                "altitude_sha256": model_io.array_sha256(
+                    self.grid.coords["altitude"].values
+                ),
+            },
+        }
+        signature_hash = model_io.canonical_json_hash(signature_payload)
+
+        output_file = None
+        signature_file = None
+        if output_dir is not None:
+            run_dir = Path(output_dir)
+            run_dir.mkdir(parents=True, exist_ok=True)
+            output_token = model_io.cache_token(signature_hash=signature_hash, cache_id=cache_id)
+            output_prefix = run_dir / f"continuity_{output_token}"
+            output_file = Path(str(output_prefix) + ".nc")
+            signature_file = model_io.signature_path_for_output_prefix(output_prefix)
+
+            if (
+                reuse_existing
+                and not force_recompute
+                and output_file.exists()
+                and signature_file.exists()
+            ):
+                import json
+                with signature_file.open("r", encoding="utf-8") as fh:
+                    saved_raw = json.load(fh)
+                saved_payload = model_io.normalize_signature_payload(saved_raw)
+                if saved_payload == signature_payload:
+                    self.continuity = xr.load_dataset(output_file)
+                    self.continuity.attrs["continuity_loaded_from_cache"] = 1
+                    return self.continuity
+
+        continuity = continuity_tools.solve_continuity(
+            grid=self.grid,
+            t0_s=float(t0_s),
+            tmax_s=float(tmax_s),
+            dt_s=float(dt_s),
+            b=float(b),
+            divergence_flag=int(divergence_flag),
+            geomag_flag=bool(geomag_flag),
+            store_neutral_velocity=bool(store_neutral_velocity),
+        )
+
+        continuity["travel_time_s"] = self.grid["travel_time_s"]
+        continuity["infraga_amplitude"] = self.grid["infraga_amplitude"]
+
+        continuity.attrs["continuity_loaded_from_cache"] = 0
+        continuity.attrs["continuity_signature_hash"] = signature_hash
+        import json
+        continuity.attrs["continuity_signature_payload"] = json.dumps(
+            signature_payload, sort_keys=True
+        )
+
+        if output_file is not None and signature_file is not None:
+            continuity.to_netcdf(output_file)
+            with signature_file.open("w", encoding="utf-8") as fh:
+                json.dump(
+                    {"signature_hash": signature_hash, "signature": signature_payload},
+                    fh,
+                    indent=2,
+                    sort_keys=True,
+                )
+
+        self.continuity = continuity
+        return continuity
 
 
         
