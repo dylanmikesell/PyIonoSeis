@@ -24,7 +24,7 @@ jobs:
                                     pip install .[dev]
             - name: Discover typos with codespell
               run: |
-                                    codespell --config .codespell --ignore-words-list="aci,hist"
+                                    codespell --config .codespell
             - name: PKG-TEST
               run: |
                   python -m unittest discover tests/
