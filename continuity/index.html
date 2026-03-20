@@ -12,13 +12,13 @@
         <meta name="author" content="dylanmikesell">
       
       
-        <link rel="canonical" href="https://dylanmikesell.github.io/pyionoseis/contributing/">
+        <link rel="canonical" href="https://dylanmikesell.github.io/pyionoseis/continuity/">
       
       
-        <link rel="prev" href="../usage/">
+        <link rel="prev" href="../model/">
       
       
-        <link rel="next" href="../faq/">
+        <link rel="next" href="../wavevector/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Contributing - pyionoseis</title>
+        <title>Continuity - pyionoseis</title>
       
     
     
@@ -84,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing" class="md-skip">
+        <a href="#continuity-time-integration" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing
+              Continuity
             
           </span>
         </div>
@@ -349,37 +349,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Contributing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
         
   
   
@@ -395,120 +368,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#types-of-contributions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Types of Contributions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Types of Contributions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#report-bugs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Report Bugs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fix-bugs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fix Bugs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#implement-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implement Features
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Write Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#submit-feedback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Submit Feedback
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#get-started" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Get Started!
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pull-request-guidelines" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pull Request Guidelines
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -598,10 +457,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../continuity/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Continuity
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -617,6 +503,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#governing-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Governing Equation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pulse-and-neutral-velocity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pulse and Neutral Velocity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#magnetic-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Magnetic Projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spherical-divergence-and-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spherical Divergence and Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-continuity-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run the Continuity Step
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TOML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -921,82 +915,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#types-of-contributions" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Types of Contributions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Types of Contributions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#report-bugs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Report Bugs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fix-bugs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fix Bugs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#implement-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Implement Features
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Write Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#submit-feedback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Submit Feedback
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#get-started" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Get Started!
+        Overview
       
     </span>
   </a>
@@ -1004,10 +926,76 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pull-request-guidelines" class="md-nav__link">
+  <a href="#governing-equation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pull Request Guidelines
+        Governing Equation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pulse-and-neutral-velocity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pulse and Neutral Velocity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#magnetic-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Magnetic Projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spherical-divergence-and-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spherical Divergence and Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-continuity-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run the Continuity Step
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TOML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
       
     </span>
   </a>
@@ -1037,100 +1025,133 @@
   
 
 
-<h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h1>
-<p>Contributions are welcome, and they are greatly appreciated! Every
-little bit helps, and credit will always be given.</p>
-<p>You can contribute in many ways:</p>
-<h2 id="types-of-contributions">Types of Contributions<a class="headerlink" href="#types-of-contributions" title="Permanent link">&para;</a></h2>
-<h3 id="report-bugs">Report Bugs<a class="headerlink" href="#report-bugs" title="Permanent link">&para;</a></h3>
-<p>Report bugs at <a href="https://github.com/dylanmikesell/pyionoseis/issues">https://github.com/dylanmikesell/pyionoseis/issues</a>.</p>
-<p>If you are reporting a bug, please include:</p>
-<ul>
-<li>Your operating system name and version.</li>
-<li>Any details about your local setup that might be helpful in troubleshooting.</li>
-<li>Detailed steps to reproduce the bug.</li>
-</ul>
-<h3 id="fix-bugs">Fix Bugs<a class="headerlink" href="#fix-bugs" title="Permanent link">&para;</a></h3>
-<p>Look through the GitHub issues for bugs. Anything tagged with <code>bug</code> and
-<code>help wanted</code> is open to whoever wants to implement it.</p>
-<h3 id="implement-features">Implement Features<a class="headerlink" href="#implement-features" title="Permanent link">&para;</a></h3>
-<p>Look through the GitHub issues for features. Anything tagged with
-<code>enhancement</code> and <code>help wanted</code> is open to whoever wants to implement it.</p>
-<h3 id="write-documentation">Write Documentation<a class="headerlink" href="#write-documentation" title="Permanent link">&para;</a></h3>
-<p>PyIonoSeis could always use more documentation,
-whether as part of the official PyIonoSeis docs,
-in docstrings, or even on the web in blog posts, articles, and such.</p>
-<h3 id="submit-feedback">Submit Feedback<a class="headerlink" href="#submit-feedback" title="Permanent link">&para;</a></h3>
-<p>The best way to send feedback is to file an issue at
-<a href="https://github.com/dylanmikesell/pyionoseis/issues">https://github.com/dylanmikesell/pyionoseis/issues</a>.</p>
-<p>If you are proposing a feature:</p>
-<ul>
-<li>Explain in detail how it would work.</li>
-<li>Keep the scope as narrow as possible, to make it easier to implement.</li>
-<li>Remember that this is a volunteer-driven project, and that contributions are welcome :)</li>
-</ul>
-<h2 id="get-started">Get Started!<a class="headerlink" href="#get-started" title="Permanent link">&para;</a></h2>
-<p>Ready to contribute? Here's how to set up pyionoseis for local development.</p>
-<ol>
-<li>
-<p>Fork the pyionoseis repo on GitHub.</p>
-</li>
-<li>
-<p>Clone your fork locally:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:your_name_here/pyionoseis.git
-</code></pre></div></td></tr></table></div>
-</li>
-<li>
-<p>Install your local copy into a virtualenv. Use <code>.venv</code> at the repo
-    root for consistency:</p>
+<h1 id="continuity-time-integration">Continuity Time Integration<a class="headerlink" href="#continuity-time-integration" title="Permanent link">&para;</a></h1>
+<p>Integrate the electron density perturbation through time after ray tracing and
+wavevector mapping. This step solves the continuity equation on the 3-D grid
+and stores a 4-D <code>xr.Dataset</code> with time-varying outputs.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev<span class="o">]</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code>flowchart TD
+    A[trace_rays] --&gt; B[assign_wavevector]
+    B --&gt; C[assign_continuity]
+    C --&gt; D[dNe + neutral velocity on 4D grid]
 </code></pre></div></td></tr></table></div>
-<p>On Windows activate with this instead:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>.venv<span class="se">\S</span>cripts<span class="se">\a</span>ctivate
+<h2 id="governing-equation">Governing Equation<a class="headerlink" href="#governing-equation" title="Permanent link">&para;</a></h2>
+<p>Solve the electron continuity equation with a prescribed ion velocity field:</p>
+<p>$$
+\frac{\partial \, \delta N_e}{\partial t} + \nabla \cdot \left(N_{e0}\, \mathbf{u}_e\right) = 0
+$$</p>
+<p>Use a forward-Euler update at each time step:</p>
+<p>$$
+\delta N_e^{n+1} = \delta N_e^{n} - \Delta t\, \nabla \cdot \left(N_{e0}\, \mathbf{u}_e\right)
+$$</p>
+<p>This implementation assumes $\delta N_e \ll N_{e0}$ and does not include
+photo-chemical source/sink terms.</p>
+<h2 id="pulse-and-neutral-velocity">Pulse and Neutral Velocity<a class="headerlink" href="#pulse-and-neutral-velocity" title="Permanent link">&para;</a></h2>
+<p>Build a causal N-wave pulse with a time-dependent width:</p>
+<p>$$
+\sigma = b\, t_i
+$$</p>
+<p>$$
+\mathrm{stf}(t) = \frac{\sqrt{2}}{\sigma^{3/2}\,\pi^{1/4}} (t_i - t_p)
+\exp\left[-\left(\frac{t_i - t_p}{\sqrt{2}\,\sigma}\right)^2\right]
+$$</p>
+<p>$$
+\mathbf{V}_n = A\,\mathrm{stf}\,\mathbf{k}
+$$</p>
+<ul>
+<li>$t_i$ is infraGA travel time mapped to the grid.</li>
+<li>$A$ is the linear infraGA amplitude mapped to the grid.</li>
+<li>$\mathbf{k} = (k_r, k_t, k_p)$ is the geometry-based wavevector.</li>
+</ul>
+<h2 id="magnetic-projection">Magnetic Projection<a class="headerlink" href="#magnetic-projection" title="Permanent link">&para;</a></h2>
+<p>Project neutral velocity onto the geomagnetic field direction when enabled:</p>
+<p>$$
+\mathbf{u}_e = (\mathbf{V}_n \cdot \hat{\mathbf{b}})\, \hat{\mathbf{b}}
+$$</p>
+<p>Set the geomagnetic flag to <code>False</code> to use the neutral velocity directly.</p>
+<h2 id="spherical-divergence-and-boundaries">Spherical Divergence and Boundaries<a class="headerlink" href="#spherical-divergence-and-boundaries" title="Permanent link">&para;</a></h2>
+<p>Compute divergence in spherical coordinates. Use full 3-D divergence by
+default, with a 1-D radial option via <code>divergence_flag=1</code>.</p>
+<p>Boundary handling matches the legacy Fortran implementation:</p>
+<ul>
+<li><strong>Divergence operator</strong>: clamp indices at grid edges, which applies a
+  one-sided difference at the boundaries.</li>
+<li><strong>Top altitude boundary</strong>: copy the last interior value to the top cell
+  after each time step.</li>
+</ul>
+<h2 id="run-the-continuity-step">Run the Continuity Step<a class="headerlink" href="#run-the-continuity-step" title="Permanent link">&para;</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyionoseis.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Model3D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyionoseis.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">EarthquakeSource</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="n">source</span> <span class="o">=</span> <span class="n">EarthquakeSource</span><span class="p">(</span><span class="s2">&quot;event.toml&quot;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model3D</span><span class="p">(</span><span class="s2">&quot;event.toml&quot;</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">assign_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">make_3Dgrid</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">assign_atmosphere</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">assign_ionosphere</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">assign_magnetic_field</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">trace_rays</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;2d&quot;</span><span class="p">,</span> <span class="n">az_interp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">az_interp_step</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">assign_wavevector</span><span class="p">(</span><span class="n">mapping_mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+
+<span class="n">continuity</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">assign_continuity</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;continuity_output&quot;</span><span class="p">,</span>
+    <span class="n">reuse_existing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">continuity</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-</li>
-<li>
-<p>Create a branch for local development:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>name-of-your-bugfix-or-feature
-</code></pre></div></td></tr></table></div>
-<p>Now you can make your changes locally.</p>
-</li>
-<li>
-<p>When you're done making changes, check that your changes pass flake8
-    and the tests:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code>flake8<span class="w"> </span>pyionoseis<span class="w"> </span>tests
-python<span class="w"> </span>scripts/run_tests.py
-</code></pre></div></td></tr></table></div>
-</li>
-<li>
-<p>Commit your changes and push your branch to GitHub:</p>
+<h2 id="toml-configuration">TOML Configuration<a class="headerlink" href="#toml-configuration" title="Permanent link">&para;</a></h2>
+<p>Store timing parameters under the <code>[continuity]</code> section:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code>$<span class="w"> </span>git<span class="w"> </span>add<span class="w"> </span>.
-$<span class="w"> </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Your detailed description of your changes.&quot;</span>
-$<span class="w"> </span>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>name-of-your-bugfix-or-feature
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">[continuity]</span>
+<span class="c1"># seconds</span>
+<span class="n">t0_s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span>
+<span class="n">tmax_s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3600.0</span>
+<span class="n">dt_s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10.0</span>
 </code></pre></div></td></tr></table></div>
-</li>
-<li>
-<p>Submit a pull request through the GitHub website.</p>
-</li>
-</ol>
-<h2 id="pull-request-guidelines">Pull Request Guidelines<a class="headerlink" href="#pull-request-guidelines" title="Permanent link">&para;</a></h2>
-<p>Before you submit a pull request, check that it meets these guidelines:</p>
-<ol>
-<li>The pull request should include tests.</li>
-<li>If the pull request adds functionality, the docs should be updated.
-    Put your new functionality into a function with a docstring, and add
-    the feature to the list in README.rst.</li>
-<li>The pull request should work for Python 3.10 and later, and
-    for PyPy. Check <a href="https://github.com/dylanmikesell/pyionoseis/pull_requests">https://github.com/dylanmikesell/pyionoseis/pull_requests</a> and make sure that the tests pass for all
-    supported Python versions.</li>
-</ol>
+<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
+<p>The output dataset includes:</p>
+<ul>
+<li><code>dNe</code> — electron density perturbation (m^-3)</li>
+<li><code>neutral_velocity_r</code>, <code>neutral_velocity_t</code>, <code>neutral_velocity_p</code> —
+  neutral velocity components (m/s) when enabled</li>
+<li><code>travel_time_s</code> and <code>infraga_amplitude</code> — mapped infraGA scalars</li>
+</ul>
+<p>Use <code>model.continuity</code> to access the cached result after the run.</p>
 
 
 
@@ -1163,7 +1184,7 @@ $<span class="w"> </span>git<span class="w"> </span>push<span class="w"> </span>
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 25, 2025 16:14:09 UTC"><span class="timeago" datetime="2025-01-25T16:14:09+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 25, 2025 16:14:09 UTC">2025-01-25</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 20, 2026 16:08:40 UTC"><span class="timeago" datetime="2026-03-20T16:08:40+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 20, 2026 16:08:40 UTC">2026-03-20</span>
   </span>
 
     
