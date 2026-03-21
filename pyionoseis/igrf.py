@@ -1,21 +1,4 @@
-"""
-IGRF (International Geomagnetic Reference Field) module for PyIonoSeis.
-
-This module provides classes and functions for computing magnetic field parameters
-using the IGRF model via the ppigrf package.
-
-Classes:
---------
-MagneticField1D : Class for computing 1D magnetic field profiles
-MagneticFieldModel : Factory class for magnetic field model selection
-
-Functions:
-----------
-Various utility functions for magnetic field calculations
-
-Author: PyIonoSeis Development Team
-License: MIT
-"""
+"""IGRF magnetic-field profile utilities using ``ppigrf``."""
 
 import numpy as np
 import xarray as xr
@@ -34,68 +17,37 @@ except ImportError:
 
 
 class MagneticField1D:
-    """
-    Class for computing 1D magnetic field profiles using IGRF models.
-    
-    This class calculates magnetic field components and derived parameters
-    (inclination, declination) for a specific location and time using the
-    IGRF model via the ppigrf package.
-    
-    Attributes:
-    -----------
+    """One-dimensional magnetic field profile computed from IGRF.
+
+    Parameters
+    ----------
     lat : float
         Latitude in degrees.
     lon : float
         Longitude in degrees.
     alt_km : array-like
-        Altitude array in kilometers.
+        Altitude grid in km.
     time : datetime
-        The time for calculation.
-    model : str
-        The magnetic field model used.
-    magnetic_field : xarray.Dataset
-        The magnetic field parameters including field components and derived quantities.
-        
-    Methods:
-    --------
-    __init__(self, lat, lon, alt_km, time, model="igrf"):
-        Initializes the MagneticField1D object with the given parameters.
-    __str__(self):
-        Returns a string representation of the MagneticField1D object.
-    print(self):
-        Prints the string representation of the MagneticField1D object.
-    compute_igrf_model(self):
-        Computes the magnetic field model using the IGRF model and calculates
-        field components, inclination, and declination.
-    plot(self, variable='total_field'):
-        Plot magnetic field parameters vs altitude.
+        UTC time used for model evaluation.
+    model : str, optional
+        Magnetic field model name. Only ``"igrf"`` is supported.
+
+    Attributes
+    ----------
+    magnetic_field : xr.Dataset
+        Dataset with geodetic/geocentric magnetic components and derived
+        inclination, declination, and field intensities.
     """
 
     def __init__(self, lat, lon, alt_km, time, model="igrf"):
-        """
-        Initialize MagneticField1D object.
-        
-        Parameters:
-        -----------
-        lat : float
-            Latitude in degrees.
-        lon : float
-            Longitude in degrees.
-        alt_km : array-like
-            Altitude array in kilometers.
-        time : datetime
-            Time for the calculation.
-        model : str, optional
-            Magnetic field model to use (default: "igrf").
-        """
-        self.lat = lat
-        self.lon = lon
+        """Initialize and compute an IGRF magnetic profile."""
+        self.lat = float(lat)
+        self.lon = float(lon)
         self.alt_km = np.array(alt_km)
         self.time = time
         self.model = model
         self.magnetic_field = None
         
-        # Compute the magnetic field model
         if model.lower() == "igrf":
             self.compute_igrf_model()
         else:
@@ -115,69 +67,51 @@ class MagneticField1D:
                 f" Model: {self.model}{field_info}")
 
     def print(self):
-        """Print the string representation of the object."""
+        """Log the object representation at INFO level."""
         _log.info("%s", self.__str__())
 
     def compute_igrf_model(self):
-        """
-        Compute the magnetic field model using the IGRF model.
-        
-        This function calculates magnetic field components and derived parameters
-        in both geodetic and geocentric coordinate systems using the IGRF model via ppigrf.
-        
-        Geodetic coordinates: Be (east), Bn (north), Bu (up) - tangent to Earth's ellipsoid
-        Geocentric coordinates: Br (radial), Btheta (south), Bphi (east) - spherical coordinates
-        
-        The IGRF model provides magnetic field components in nT.
+        """Compute and store an IGRF magnetic-field profile.
+
+        Returns
+        -------
+        xr.Dataset
+            Dataset containing magnetic components and derived quantities.
+
+        Raises
+        ------
+        ImportError
+            If ``ppigrf`` is unavailable.
         """
         if not PPIGRF_AVAILABLE:
             raise ImportError("ppigrf package is not available. Please install it with: pip install ppigrf")
         
-        # Calculate geodetic magnetic field components using ppigrf
-        # ppigrf.igrf returns Be (east), Bn (north), Bu (up) in geodetic coordinates
         Be, Bn, Bu = ppigrf.igrf(self.lon, self.lat, self.alt_km, self.time)
         
-        # Calculate geocentric magnetic field components using ppigrf
-        # First convert geodetic coordinates to geocentric
-        # r = radius from Earth center (km)
-        # theta = colatitude (90 - latitude) in degrees
-        # phi = longitude (same as geodetic)
-        
-        # Earth's radius approximation
         RE = 6371.2  # km, standard geophysical radius
         r = RE + self.alt_km  # radius from Earth center
         theta = 90.0 - self.lat  # colatitude (degrees)
         phi = self.lon  # longitude (same as geodetic)
         
-        # Get geocentric magnetic field components
-        # ppigrf.igrf_gc returns Br (radial), Btheta (south), Bphi (east)
         Br, Btheta, Bphi = ppigrf.igrf_gc(r, theta, phi, self.time)
         
-        # Calculate derived parameters from geodetic components
         inclination, declination = ppigrf.get_inclination_declination(Be, Bn, Bu, degrees=True)
         
-        # Calculate field intensities
         horizontal_intensity = np.sqrt(Be**2 + Bn**2)
         total_field = np.sqrt(Be**2 + Bn**2 + Bu**2)
         
-        # Create xarray Dataset for the magnetic field model
         self.magnetic_field = xr.Dataset(
             {
-                # Geodetic components
-                "Be": (["altitude"], Be.flatten()),  # East component (nT)
-                "Bn": (["altitude"], Bn.flatten()),  # North component (nT)
-                "Bu": (["altitude"], Bu.flatten()),  # Up component (nT)
-                
-                # Geocentric components  
-                "Br": (["altitude"], Br.flatten()),  # Radial component (nT)
-                "Btheta": (["altitude"], Btheta.flatten()),  # Colatitude component (nT)
-                "Bphi": (["altitude"], Bphi.flatten()),  # Azimuthal component (nT)
-                
-                # Derived parameters
-                "inclination": (["altitude"], inclination.flatten()),  # Inclination (degrees)
-                "declination": (["altitude"], declination.flatten()),  # Declination (degrees)
-                "horizontal_intensity": (["altitude"], horizontal_intensity.flatten()),  # Horizontal intensity (nT)
-                "total_field": (["altitude"], total_field.flatten()),  # Total field intensity (nT)
+                "Be": (["altitude"], Be.flatten()),
+                "Bn": (["altitude"], Bn.flatten()),
+                "Bu": (["altitude"], Bu.flatten()),
+                "Br": (["altitude"], Br.flatten()),
+                "Btheta": (["altitude"], Btheta.flatten()),
+                "Bphi": (["altitude"], Bphi.flatten()),
+                "inclination": (["altitude"], inclination.flatten()),
+                "declination": (["altitude"], declination.flatten()),
+                "horizontal_intensity": (["altitude"], horizontal_intensity.flatten()),
+                "total_field": (["altitude"], total_field.flatten()),
             },
             coords={
                 "altitude": self.alt_km,
@@ -196,6 +130,14 @@ class MagneticField1D:
                 "coordinate_system_note": "Geodetic components are tangent to Earth's ellipsoid, geocentric are spherical"
             }
         )
+        for var in [
+            "Be", "Bn", "Bu", "Br", "Btheta", "Bphi",
+            "horizontal_intensity", "total_field",
+        ]:
+            self.magnetic_field[var].attrs["units"] = "nT"
+        self.magnetic_field["inclination"].attrs["units"] = "degrees"
+        self.magnetic_field["declination"].attrs["units"] = "degrees"
+        return self.magnetic_field
             
     def plot(self, variable='total_field'):
         """
@@ -308,36 +250,11 @@ class MagneticField1D:
 
 
 class MagneticFieldModel:
-    """
-    Factory class for magnetic field model selection.
-    
-    This class provides a unified interface for creating magnetic field
-    models with different implementations.
-    """
+    """Factory for magnetic-field profile classes."""
     
     @staticmethod
     def create(lat, lon, alt_km, time, model="igrf"):
-        """
-        Create a magnetic field model instance.
-        
-        Parameters:
-        -----------
-        lat : float
-            Latitude in degrees.
-        lon : float
-            Longitude in degrees.
-        alt_km : array-like
-            Altitude array in kilometers.
-        time : datetime
-            Time for calculation.
-        model : str, optional
-            Model type (default: "igrf").
-            
-        Returns:
-        --------
-        MagneticField1D
-            Magnetic field model instance.
-        """
+        """Create a configured ``MagneticField1D`` instance."""
         if model.lower() == "igrf":
             return MagneticField1D(lat, lon, alt_km, time, model)
         else:
@@ -346,25 +263,5 @@ class MagneticFieldModel:
 
 # Convenience function for quick calculations
 def calculate_magnetic_field(lat, lon, alt_km, time, model="igrf"):
-    """
-    Convenience function to quickly calculate magnetic field parameters.
-    
-    Parameters:
-    -----------
-    lat : float
-        Latitude in degrees.
-    lon : float
-        Longitude in degrees.
-    alt_km : array-like
-        Altitude array in kilometers.
-    time : datetime
-        Time for calculation.
-    model : str, optional
-        Model type (default: "igrf").
-        
-    Returns:
-    --------
-    MagneticField1D
-        Computed magnetic field model.
-    """
+    """Compute and return a magnetic-field profile object."""
     return MagneticFieldModel.create(lat, lon, alt_km, time, model)

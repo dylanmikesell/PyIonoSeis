@@ -80,8 +80,16 @@ The linked GitHub issue may still be open until administrative close-out.
 
 ## P1: Align Module Conventions Across Old/New Code
 
-- [ ] Normalize style and patterns in legacy-style modules
+- [x] Normalize style and patterns in legacy-style modules
   - Issue: #7
+  - Status: implementation complete; issue open pending close-out
+  - Progress:
+    - Normalized module/class docstrings to consistent NumPy-style sections
+    - Removed stale placeholder artifacts (e.g., stray `pass`, stale TODO/comment clutter)
+    - Standardized logging helper docstrings and basic typing across source/atmosphere/ionosphere/igrf
+    - Added explicit variable-level units attrs where missing in atmosphere/ionosphere/igrf datasets
+    - Added `get_depth()` to `EarthquakeSource` for API consistency with model-side source introspection
+    - Validated with related `.venv` unittest runs (24 tests, OK)
   - Scope:
     - Review `atmosphere.py`, `ionosphere.py`, `igrf.py`, `source.py`
     - Remove stale TODO/pass artifacts and improve docstring consistency
@@ -120,6 +128,5 @@ The linked GitHub issue may still be open until administrative close-out.
 
 ## Suggested Implementation Order
 1. P0 `Model3D` decomposition
-2. P1 legacy-style module normalization
-3. P2 maintenance workflow (periodic triage cadence)
-4. Administrative close-out for completed issues (#2, #3, #4, #6)
+2. P2 maintenance workflow (periodic triage cadence)
+3. Administrative close-out for completed issues (#2, #3, #4, #6, #7)
