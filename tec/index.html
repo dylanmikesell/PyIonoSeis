@@ -612,6 +612,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#legacy-input-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Input Compatibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Legacy Input Compatibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#legacy-receiver-file-listesta_alltxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Receiver File (listesta_all.txt)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#legacy-orbit-file-pos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Orbit File (.pos)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -875,6 +914,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#legacy-input-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Input Compatibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Legacy Input Compatibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#legacy-receiver-file-listesta_alltxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Receiver File (listesta_all.txt)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#legacy-orbit-file-pos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Orbit File (.pos)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -943,21 +1021,85 @@
 </ul>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Add LOS TEC settings under the <code>[tec]</code> section in the event TOML file:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span>
-<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">[tec]</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">[tec]</span>
 <span class="n">elevation_mask_deg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">20.0</span>
 <span class="n">output_dt_s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10.0</span>
 <span class="n">ipp_altitude_km</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">350.0</span>
+<span class="n">receiver_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;csv&quot;</span>
 <span class="n">receiver_csv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example/inputs/gnss_receivers_list_complete.csv&quot;</span>
 <span class="n">receiver_code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;TUA1&quot;</span>
+<span class="n">orbit_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;h5&quot;</span>
 <span class="n">orbit_h5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example/inputs/SatsOrbs2010298.h5&quot;</span>
 <span class="n">sat_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;G21&quot;</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="legacy-input-compatibility">Legacy Input Compatibility<a class="headerlink" href="#legacy-input-compatibility" title="Permanent link">&para;</a></h2>
+<p>Run LOS TEC with historical VAN-style files by selecting legacy input formats.</p>
+<h3 id="legacy-receiver-file-listesta_alltxt">Legacy Receiver File (<code>listesta_all.txt</code>)<a class="headerlink" href="#legacy-receiver-file-listesta_alltxt" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Format: whitespace-delimited station rows with <code>code x_m y_m z_m lat lon</code></li>
+<li>The loader uses ECEF (<code>x_m</code>, <code>y_m</code>, <code>z_m</code>) as authoritative and recomputes
+  geodetic latitude/longitude/height.</li>
+</ul>
+<h3 id="legacy-orbit-file-pos">Legacy Orbit File (<code>.pos</code>)<a class="headerlink" href="#legacy-orbit-file-pos" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Format: whitespace-delimited rows with <code>seconds_of_day x_m y_m z_m lon lat ele</code></li>
+<li>One satellite per file (<code>satNN_XXXXX.pos</code>)</li>
+<li>Satellite identity supports mixed constellations via mapping file.</li>
+</ul>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">[tec]</span>
+<span class="n">elevation_mask_deg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">20.0</span>
+<span class="n">output_dt_s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">10.0</span>
+<span class="n">ipp_altitude_km</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">350.0</span>
+
+<span class="n">receiver_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;listesta&quot;</span>
+<span class="n">receiver_listesta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example/VAN/listesta_all.txt&quot;</span>
+<span class="n">receiver_code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;agrd&quot;</span>
+
+<span class="n">orbit_format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;pos&quot;</span>
+<span class="c1"># Option 1: direct SATPOS file</span>
+<span class="n">orbit_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example/VAN/SATPOS/16591/sat17_16591.pos&quot;</span>
+
+<span class="c1"># Option 2: legacy SATPOS root/date/sat lookup</span>
+<span class="c1"># satpos_root = &quot;example/VAN/SATPOS&quot;</span>
+<span class="c1"># satpos_date = &quot;16591&quot;</span>
+<span class="c1"># sat_number = 17</span>
+
+<span class="c1"># Mixed-constellation mapping (CSV columns: sat_number,sat_id)</span>
+<span class="n">sat_mapping_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;example/VAN/sat_number_mapping.csv&quot;</span>
+
+<span class="c1"># Start offset (s) relative to event origin for legacy SATPOS alignment</span>
+<span class="n">start_offset_s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">100.0</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -981,7 +1123,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 21, 2026 08:49:32 UTC"><span class="timeago" datetime="2026-03-21T08:49:32+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 21, 2026 08:49:32 UTC">2026-03-21</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 21, 2026 20:01:48 UTC"><span class="timeago" datetime="2026-03-21T20:01:48+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 21, 2026 20:01:48 UTC">2026-03-21</span>
   </span>
 
     
