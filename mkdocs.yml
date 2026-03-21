@@ -60,11 +60,23 @@ markdown_extensions:
     - footnotes
     - meta
     - md_in_html
-    - pymdownx.superfences
+    - pymdownx.arithmatex:
+        generic: true
+    - pymdownx.superfences:
+        custom_fences:
+          - name: mermaid
+            class: mermaid
+            format: !!python/name:pymdownx.superfences.fence_code_format
     - pymdownx.highlight:
           linenums: true
     - toc:
           permalink: true
+
+extra_javascript:
+    - javascripts/mathjax.js
+    - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+    - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+    - javascripts/mermaid.js
 
 # extra:
 #     analytics:
