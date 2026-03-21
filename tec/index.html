@@ -1013,34 +1013,34 @@
 <h2 id="geometry">Geometry<a class="headerlink" href="#geometry" title="Permanent link">&para;</a></h2>
 <p>Define the receiver and satellite positions in ECEF coordinates (km):</p>
 <ul>
-<li>Receiver position: $\mathbf{r}_r$</li>
-<li>Satellite position: $\mathbf{r}_s$</li>
+<li>Receiver position: <span class="arithmatex">\(\mathbf{r}_r\)</span></li>
+<li>Satellite position: <span class="arithmatex">\(\mathbf{r}_s\)</span></li>
 </ul>
 <p>The line-of-sight unit vector is:</p>
-<p>$$
-\hat{\mathbf{u}} = \frac{\mathbf{r}_s - \mathbf{r}_r}{|\mathbf{r}_s - \mathbf{r}_r|}
-$$</p>
-<p>For each altitude $h$ (km) in the model grid, intersect the LOS with a spherical shell of radius $R_E + h$:</p>
-<p>$$
-|\mathbf{r}_r + s\,\hat{\mathbf{u}}|^2 = (R_E + h)^2
-$$</p>
-<p>Solve for $s$ (km) along the LOS. The intersection latitude/longitude define the ionospheric pierce point (IPP) at each altitude.</p>
+<div class="arithmatex">\[
+\hat{\mathbf{u}} = \frac{\mathbf{r}_s - \mathbf{r}_r}{\|\mathbf{r}_s - \mathbf{r}_r\|}
+\]</div>
+<p>For each altitude <span class="arithmatex">\(h\)</span> (km) in the model grid, intersect the LOS with a spherical shell of radius <span class="arithmatex">\(R_E + h\)</span>:</p>
+<div class="arithmatex">\[
+\|\mathbf{r}_r + s\,\hat{\mathbf{u}}\|^2 = (R_E + h)^2
+\]</div>
+<p>Solve for <span class="arithmatex">\(s\)</span> (km) along the LOS. The intersection latitude/longitude define the ionospheric pierce point (IPP) at each altitude.</p>
 <h2 id="electron-density-sampling">Electron Density Sampling<a class="headerlink" href="#electron-density-sampling" title="Permanent link">&para;</a></h2>
 <p>At each time and altitude, sample the 3-D electron density fields on the IPP path:</p>
 <ul>
-<li>Background density: $N_{e0}(\phi, \lambda, h)$</li>
-<li>Perturbation density: $\Delta N_e(\phi, \lambda, h, t)$</li>
+<li>Background density: <span class="arithmatex">\(N_{e0}(\phi, \lambda, h)\)</span></li>
+<li>Perturbation density: <span class="arithmatex">\(\Delta N_e(\phi, \lambda, h, t)\)</span></li>
 </ul>
 <p>Missing values are treated as zero, and the number of missing samples per LOS is logged.</p>
 <h2 id="tec-integration">TEC Integration<a class="headerlink" href="#tec-integration" title="Permanent link">&para;</a></h2>
 <p>TEC is the line integral of electron density along the slant path:</p>
-<p>$$
+<div class="arithmatex">\[
 \mathrm{TEC}(t) = 10^{-16} \int N_e(s, t)\, ds
-$$</p>
+\]</div>
 <p>The current implementation uses trapezoidal integration in meters along the sampled path:</p>
-<p>$$
+<div class="arithmatex">\[
 \mathrm{TEC}(t) \approx 10^{-16} \sum_i \frac{N_e(s_i, t) + N_e(s_{i+1}, t)}{2} (s_{i+1} - s_i)
-$$</p>
+\]</div>
 <p>Outputs include background TEC, perturbation TEC, and total TEC.</p>
 <h2 id="elevation-mask">Elevation Mask<a class="headerlink" href="#elevation-mask" title="Permanent link">&para;</a></h2>
 <p>The elevation angle is computed from the local ENU frame at the receiver. Samples with elevation below the configured mask are skipped. The default mask is 20 degrees, configurable in the TOML file.</p>
@@ -1169,6 +1169,14 @@ $$</p>
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+        <script src="../javascripts/mermaid.js"></script>
       
     
   </body>

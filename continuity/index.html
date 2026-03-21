@@ -1057,47 +1057,43 @@
 wavevector mapping. This step solves the continuity equation on the 3-D grid
 and stores a 4-D <code>xr.Dataset</code> with time-varying outputs.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code>flowchart TD
+<pre class="mermaid"><code>flowchart TD
     A[trace_rays] --&gt; B[assign_wavevector]
     B --&gt; C[assign_continuity]
-    C --&gt; D[dNe + neutral velocity on 4D grid]
-</code></pre></div></td></tr></table></div>
+    C --&gt; D[dNe + neutral velocity on 4D grid]</code></pre>
 <h2 id="governing-equation">Governing Equation<a class="headerlink" href="#governing-equation" title="Permanent link">&para;</a></h2>
 <p>Solve the electron continuity equation with a prescribed ion velocity field:</p>
-<p>$$
+<div class="arithmatex">\[
 \frac{\partial \, \delta N_e}{\partial t} + \nabla \cdot \left(N_{e0}\, \mathbf{u}_e\right) = 0
-$$</p>
+\]</div>
 <p>Use a forward-Euler update at each time step:</p>
-<p>$$
+<div class="arithmatex">\[
 \delta N_e^{n+1} = \delta N_e^{n} - \Delta t\, \nabla \cdot \left(N_{e0}\, \mathbf{u}_e\right)
-$$</p>
-<p>This implementation assumes $\delta N_e \ll N_{e0}$ and does not include
+\]</div>
+<p>This implementation assumes <span class="arithmatex">\(\delta N_e \ll N_{e0}\)</span> and does not include
 photo-chemical source/sink terms.</p>
 <h2 id="pulse-and-neutral-velocity">Pulse and Neutral Velocity<a class="headerlink" href="#pulse-and-neutral-velocity" title="Permanent link">&para;</a></h2>
 <p>Build a causal N-wave pulse with a time-dependent width:</p>
-<p>$$
+<div class="arithmatex">\[
 \sigma = b\, t_i
-$$</p>
-<p>$$
+\]</div>
+<div class="arithmatex">\[
 \mathrm{stf}(t) = \frac{\sqrt{2}}{\sigma^{3/2}\,\pi^{1/4}} (t_i - t_p)
 \exp\left[-\left(\frac{t_i - t_p}{\sqrt{2}\,\sigma}\right)^2\right]
-$$</p>
-<p>$$
+\]</div>
+<div class="arithmatex">\[
 \mathbf{V}_n = A\,\mathrm{stf}\,\mathbf{k}
-$$</p>
+\]</div>
 <ul>
-<li>$t_i$ is infraGA travel time mapped to the grid.</li>
-<li>$A$ is the linear infraGA amplitude mapped to the grid.</li>
-<li>$\mathbf{k} = (k_r, k_t, k_p)$ is the geometry-based wavevector.</li>
+<li><span class="arithmatex">\(t_i\)</span> is infraGA travel time mapped to the grid.</li>
+<li><span class="arithmatex">\(A\)</span> is the linear infraGA amplitude mapped to the grid.</li>
+<li><span class="arithmatex">\(\mathbf{k} = (k_r, k_t, k_p)\)</span> is the geometry-based wavevector.</li>
 </ul>
 <h2 id="magnetic-projection">Magnetic Projection<a class="headerlink" href="#magnetic-projection" title="Permanent link">&para;</a></h2>
 <p>Project neutral velocity onto the geomagnetic field direction when enabled:</p>
-<p>$$
+<div class="arithmatex">\[
 \mathbf{u}_e = (\mathbf{V}_n \cdot \hat{\mathbf{b}})\, \hat{\mathbf{b}}
-$$</p>
+\]</div>
 <p>Set the geomagnetic flag to <code>False</code> to use the neutral velocity directly.</p>
 <h2 id="spherical-divergence-and-boundaries">Spherical Divergence and Boundaries<a class="headerlink" href="#spherical-divergence-and-boundaries" title="Permanent link">&para;</a></h2>
 <p>Compute divergence in spherical coordinates. Use full 3-D divergence by
@@ -1279,6 +1275,14 @@ default, with a 1-D radial option via <code>divergence_flag=1</code>.</p>
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+        <script src="../javascripts/mermaid.js"></script>
       
     
   </body>

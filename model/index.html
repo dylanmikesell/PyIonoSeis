@@ -2642,38 +2642,16 @@ physics-consistent 3-D grid and run infrasound ray tracing.</p>
 <p><code>Model3D</code> delegates physics to four specialised 1-D profile classes and
 one subprocess wrapper. Plotting and IO concerns are separated into
 dedicated modules so the orchestrator stays focused on assembling the grid.</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code>graph TB
-    subgraph &quot;pyionoseis&quot;
-        M[&quot;Model3D\n(model.py)&quot;]
-        MP[&quot;ModelPlotMixin\n(model_plot.py)&quot;]
-        MIO[&quot;model_io\n(model_io.py)&quot;]
-        ATM[&quot;Atmosphere1D\n(atmosphere.py)&quot;]
-        ION[&quot;Ionosphere1D\n(ionosphere.py)&quot;]
-        MAG[&quot;MagneticField1D\n(igrf.py)&quot;]
-        INFRA[&quot;infraga tools\n(infraga.py)&quot;]
-        SRC[&quot;EarthquakeSource\n(source.py)&quot;]
+<pre class="mermaid"><code>graph TB
+    subgraph "pyionoseis"
+        M["Model3D\n(model.py)"]
+        MP["ModelPlotMixin\n(model_plot.py)"]
+        MIO["model_io\n(model_io.py)"]
+        ATM["Atmosphere1D\n(atmosphere.py)"]
+        ION["Ionosphere1D\n(ionosphere.py)"]
+        MAG["MagneticField1D\n(igrf.py)"]
+        INFRA["infraga tools\n(infraga.py)"]
+        SRC["EarthquakeSource\n(source.py)"]
     end
 
     M --&gt;|inherits| MP
@@ -2686,21 +2664,10 @@ dedicated modules so the orchestrator stays focused on assembling the grid.</p>
 
     style M fill:#1168bd,stroke:#0b4884,color:#ffffff
     style MP fill:#85bbf0,stroke:#5d82a8
-    style MIO fill:#85bbf0,stroke:#5d82a8
-</code></pre></div></td></tr></table></div>
+    style MIO fill:#85bbf0,stroke:#5d82a8</code></pre>
 <h2 id="typical-workflow">Typical Workflow<a class="headerlink" href="#typical-workflow" title="Permanent link">&para;</a></h2>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code>flowchart LR
-    A[&quot;EarthquakeSource\n(event.toml)&quot;] --&gt; B[&quot;Model3D\n(event.toml)&quot;]
+<pre class="mermaid"><code>flowchart LR
+    A["EarthquakeSource\n(event.toml)"] --&gt; B["Model3D\n(event.toml)"]
     B --&gt; C[assign_source]
     C --&gt; D[make_3Dgrid]
     D --&gt; E[assign_atmosphere]
@@ -2709,8 +2676,7 @@ dedicated modules so the orchestrator stays focused on assembling the grid.</p>
     G --&gt; H[trace_rays]
     H --&gt; I[assign_wavevector]
     I --&gt; J[assign_continuity]
-    J --&gt; K[plot_variable / analysis]
-</code></pre></div></td></tr></table></div>
+    J --&gt; K[plot_variable / analysis]</code></pre>
 <p>Each step enriches <code>model.grid</code> (<code>xr.Dataset</code>) with new physical variables.
 Steps are independent — you can stop at any point and work with the data
 already computed.</p>
@@ -7322,6 +7288,14 @@ approximate in non-axisymmetric atmosphere/wind fields.</p>
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+        <script src="../javascripts/mermaid.js"></script>
       
     
   </body>

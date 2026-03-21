@@ -1054,59 +1054,59 @@
 
 <h1 id="wasp3d-wave-vector-components">Wasp3D Wave Vector Components<a class="headerlink" href="#wasp3d-wave-vector-components" title="Permanent link">&para;</a></h1>
 <p>Use this note to understand how the legacy wasp3d solver computes the wave
-vector components $k_r$, $k_t$, and $k_p$ (written as <code>kr</code>, <code>kt</code>, and <code>kf</code> in
+vector components <span class="arithmatex">\(k_r\)</span>, <span class="arithmatex">\(k_t\)</span>, and <span class="arithmatex">\(k_p\)</span> (written as <code>kr</code>, <code>kt</code>, and <code>kf</code> in
 legacy output). The formulas live in the Fortran ray tracer and are used when
 writing NetCDF outputs.</p>
 <h2 id="coordinate-system-and-variables">Coordinate System and Variables<a class="headerlink" href="#coordinate-system-and-variables" title="Permanent link">&para;</a></h2>
-<p>Work in spherical coordinates $(\rho, \theta, \phi)$ where:</p>
+<p>Work in spherical coordinates <span class="arithmatex">\((\rho, \theta, \phi)\)</span> where:</p>
 <ul>
-<li>$\rho$ is radial distance from Earth center in km.</li>
-<li>$\theta$ is colatitude in radians.</li>
-<li>$\phi$ is azimuth in radians.</li>
+<li><span class="arithmatex">\(\rho\)</span> is radial distance from Earth center in km.</li>
+<li><span class="arithmatex">\(\theta\)</span> is colatitude in radians.</li>
+<li><span class="arithmatex">\(\phi\)</span> is azimuth in radians.</li>
 </ul>
 <p>The ray state uses:</p>
 <ul>
-<li>$q$ = position vector (<code>qsol</code> or <code>qsht</code>) in $(\rho, \theta, \phi)$.</li>
-<li>$p$ = slowness vector (<code>psol</code> or <code>psht</code>).</li>
+<li><span class="arithmatex">\(q\)</span> = position vector (<code>qsol</code> or <code>qsht</code>) in <span class="arithmatex">\((\rho, \theta, \phi)\)</span>.</li>
+<li><span class="arithmatex">\(p\)</span> = slowness vector (<code>psol</code> or <code>psht</code>).</li>
 </ul>
 <p>The code integrates the ray equations using the Hamiltonian formulation in
 <a href="pyionoseis/legacy/src/wasp3d/rk2_dyn.f#L1-L36">pyionoseis/legacy/src/wasp3d/rk2_dyn.f</a>.</p>
 <h2 id="initialization-formula">Initialization Formula<a class="headerlink" href="#initialization-formula" title="Permanent link">&para;</a></h2>
 <p>At the source, wasp3d computes the slowness components and then normalizes them
 using the spherical metric. The normalization factor is:</p>
-<p>$$
-|p| = \frac{1}{p_{\mathrm{mod}}} \sqrt{p_\rho^2 + \left(\frac{p_\theta}{\rho}\right)^2 + \left(\frac{p_\phi}{\rho \sin\theta}\right)^2}
-$$</p>
+<div class="arithmatex">\[
+\|p\| = \frac{1}{p_{\mathrm{mod}}} \sqrt{p_\rho^2 + \left(\frac{p_\theta}{\rho}\right)^2 + \left(\frac{p_\phi}{\rho \sin\theta}\right)^2}
+\]</div>
 <p>The wave vector components stored to <code>bufpts(4:6)</code> are:</p>
-<p>$$
+<div class="arithmatex">\[
 \begin{aligned}
- k_r &amp;= \frac{p_\rho}{|p|} \
- k_t &amp;= \frac{p_\theta}{\rho\,|p|} \
- k_p &amp;= \frac{p_\phi}{\rho\,\sin\theta\,|p|}
+ k_r &amp;= \frac{p_\rho}{\|p\|} \\
+ k_t &amp;= \frac{p_\theta}{\rho\,\|p\|} \\
+ k_p &amp;= \frac{p_\phi}{\rho\,\sin\theta\,\|p\|}
 \end{aligned}
-$$</p>
+\]</div>
 <p>See the initialization in
 <a href="pyionoseis/legacy/src/wasp3d/ray3d_dyn.f#L152-L176">pyionoseis/legacy/src/wasp3d/ray3d_dyn.f</a>.</p>
 <h2 id="per-step-update">Per Step Update<a class="headerlink" href="#per-step-update" title="Permanent link">&para;</a></h2>
 <p>During propagation, wasp3d repeats the same normalization at each ray point
 using the updated slowness <code>psol_new</code> and position <code>qsol_new</code>:</p>
-<p>$$
-|p|<em>{\mathrm{new}} = \sqrt{p</em>\rho^2 + \left(\frac{p_\theta}{\rho}\right)^2 + \left(\frac{p_\phi}{\rho \sin\theta}\right)^2}
-$$</p>
+<div class="arithmatex">\[
+\|p\|_{\mathrm{new}} = \sqrt{p_\rho^2 + \left(\frac{p_\theta}{\rho}\right)^2 + \left(\frac{p_\phi}{\rho \sin\theta}\right)^2}
+\]</div>
 <p>and then updates:</p>
-<p>$$
+<div class="arithmatex">\[
 \begin{aligned}
- k_r &amp;= \frac{p_\rho}{|p|<em>{\mathrm{new}}} \
- k_t &amp;= \frac{p</em>\theta}{\rho\,|p|<em>{\mathrm{new}}} \
- k_p &amp;= \frac{p</em>\phi}{\rho\,\sin\theta\,|p|_{\mathrm{new}}}
+ k_r &amp;= \frac{p_\rho}{\|p\|_{\mathrm{new}}} \\
+ k_t &amp;= \frac{p_\theta}{\rho\,\|p\|_{\mathrm{new}}} \\
+ k_p &amp;= \frac{p_\phi}{\rho\,\sin\theta\,\|p\|_{\mathrm{new}}}
 \end{aligned}
-$$</p>
+\]</div>
 <p>See the propagation update in
 <a href="pyionoseis/legacy/src/wasp3d/ray3d_dyn.f#L328-L341">pyionoseis/legacy/src/wasp3d/ray3d_dyn.f</a>.</p>
 <h2 id="units-and-interpretation">Units and Interpretation<a class="headerlink" href="#units-and-interpretation" title="Permanent link">&para;</a></h2>
 <p>Interpret these components as metric-corrected slowness directions, not raw
 Cartesian components. The normalization accounts for the spherical coordinate
-basis so that $k_r$, $k_t$, and $k_p$ are dimensionless direction cosines in the
+basis so that <span class="arithmatex">\(k_r\)</span>, <span class="arithmatex">\(k_t\)</span>, and <span class="arithmatex">\(k_p\)</span> are dimensionless direction cosines in the
 local spherical frame. The NetCDF output stores them as <code>wasp_kr</code>, <code>wasp_kt</code>,
 <code>wasp_kf</code>.</p>
 <p>The NetCDF extraction that maps <code>bufpts</code> into <code>kr</code>, <code>kt</code>, and <code>kf</code> is shown in
@@ -1131,44 +1131,37 @@ contain:</p>
 <li>You cannot recover the exact wave vector components used by wasp3d because
     infraGA does not output the slowness components or local sound speed along
     the raypath.</li>
-<li>You cannot reconstruct the metric-normalized $k_r$, $k_t$, $k_p$ used in
+<li>You cannot reconstruct the metric-normalized <span class="arithmatex">\(k_r\)</span>, <span class="arithmatex">\(k_t\)</span>, <span class="arithmatex">\(k_p\)</span> used in
     wasp3d without additional slowness information from infraGA.</li>
 </ul>
 <p>Use a central-difference direction approximation in spherical coordinates if
-you need a geometry-only proxy. Define the arc-length step $\Delta s$ using the
+you need a geometry-only proxy. Define the arc-length step <span class="arithmatex">\(\Delta s\)</span> using the
 great-circle distance between successive points (in km). Then compute the local
-direction cosines $(t_r, t_\theta, t_\phi)$ as:</p>
-<p>$$
+direction cosines <span class="arithmatex">\((t_r, t_\theta, t_\phi)\)</span> as:</p>
+<div class="arithmatex">\[
 \begin{aligned}
- t_r &amp;\approx \frac{\rho_{i+1} - \rho_{i-1}}{2\,\Delta s} \
- t_\theta &amp;\approx \frac{\rho_i\,(\theta_{i+1} - \theta_{i-1})}{2\,\Delta s} \
+ t_r &amp;\approx \frac{\rho_{i+1} - \rho_{i-1}}{2\,\Delta s} \\
+ t_\theta &amp;\approx \frac{\rho_i\,(\theta_{i+1} - \theta_{i-1})}{2\,\Delta s} \\
  t_\phi &amp;\approx \frac{\rho_i\,\sin\theta_i\,(\phi_{i+1} - \phi_{i-1})}{2\,\Delta s}
 \end{aligned}
-$$</p>
+\]</div>
 <p>Treat these as dimensionless direction cosines, not true wave number
 components. Expect numerical noise near turning points where the path gradient
 is small or changes sign.</p>
-<p>To recover exact $k_r$, $k_t$, $k_p$ from infraGA, the C++ code would need to
+<p>To recover exact <span class="arithmatex">\(k_r\)</span>, <span class="arithmatex">\(k_t\)</span>, <span class="arithmatex">\(k_p\)</span> from infraGA, the C++ code would need to
 output the internal slowness components (or a local sound-speed field) alongside
 raypath geometry.</p>
 <p>Summary: infraGA outputs allow direction-only approximations, but wasp3d’s
 metric-normalized wave vector components require slowness data that infraGA
 does not currently emit.</p>
 <h2 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code>flowchart LR
+<pre class="mermaid"><code>flowchart LR
     A[ray3d_dyn.f
 compute psht, psol] --&gt; B[normalize with metric
 kr, kt, kp]
     B --&gt; C[bufpts(4:6)]
     C --&gt; D[outputw_netcdf.f
-wasp_kr, wasp_kt, wasp_kf]
-</code></pre></div></td></tr></table></div>
+wasp_kr, wasp_kt, wasp_kf]</code></pre>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <p>Use this pseudo-code to match the legacy computation in a modern
 implementation:</p>
@@ -1304,6 +1297,14 @@ implementation:</p>
         <script src="../js/timeago.min.js"></script>
       
         <script src="../js/timeago_mkdocs_material.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+        <script src="../javascripts/mermaid.js"></script>
       
     
   </body>
