@@ -69,8 +69,52 @@ Add LOS TEC settings under the `[tec]` section in the event TOML file:
 elevation_mask_deg = 20.0
 output_dt_s = 10.0
 ipp_altitude_km = 350.0
+receiver_format = "csv"
 receiver_csv = "example/inputs/gnss_receivers_list_complete.csv"
 receiver_code = "TUA1"
+orbit_format = "h5"
 orbit_h5 = "example/inputs/SatsOrbs2010298.h5"
 sat_id = "G21"
+```
+
+## Legacy Input Compatibility
+
+Run LOS TEC with historical VAN-style files by selecting legacy input formats.
+
+### Legacy Receiver File (`listesta_all.txt`)
+
+- Format: whitespace-delimited station rows with `code x_m y_m z_m lat lon`
+- The loader uses ECEF (`x_m`, `y_m`, `z_m`) as authoritative and recomputes
+  geodetic latitude/longitude/height.
+
+### Legacy Orbit File (`.pos`)
+
+- Format: whitespace-delimited rows with `seconds_of_day x_m y_m z_m lon lat ele`
+- One satellite per file (`satNN_XXXXX.pos`)
+- Satellite identity supports mixed constellations via mapping file.
+
+```toml
+[tec]
+elevation_mask_deg = 20.0
+output_dt_s = 10.0
+ipp_altitude_km = 350.0
+
+receiver_format = "listesta"
+receiver_listesta = "example/VAN/listesta_all.txt"
+receiver_code = "agrd"
+
+orbit_format = "pos"
+# Option 1: direct SATPOS file
+orbit_pos = "example/VAN/SATPOS/16591/sat17_16591.pos"
+
+# Option 2: legacy SATPOS root/date/sat lookup
+# satpos_root = "example/VAN/SATPOS"
+# satpos_date = "16591"
+# sat_number = 17
+
+# Mixed-constellation mapping (CSV columns: sat_number,sat_id)
+sat_mapping_file = "example/VAN/sat_number_mapping.csv"
+
+# Start offset (s) relative to event origin for legacy SATPOS alignment
+start_offset_s = 100.0
 ```

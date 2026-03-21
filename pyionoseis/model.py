@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import warnings
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -139,11 +140,20 @@ class Model3D(ModelPlotMixin):
             self.tec_output_dt_s = None
             self.tec_ipp_altitude_km = 350.0
             self.tec_receiver_csv = None
+            self.tec_receiver_listesta = None
             self.tec_orbit_h5 = None
+            self.tec_orbit_pos = None
             self.tec_receiver_code = None
             self.tec_sat_id = None
             self.tec_constellation = None
             self.tec_prn = None
+            self.tec_receiver_format = None
+            self.tec_orbit_format = None
+            self.tec_satpos_root = None
+            self.tec_satpos_date = None
+            self.tec_sat_number = None
+            self.tec_sat_mapping_file = None
+            self.tec_start_offset_s = 0.0
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -170,17 +180,26 @@ class Model3D(ModelPlotMixin):
         self.tec_elevation_mask_deg = tec.get("elevation_mask_deg", 20.0)
         self.tec_output_dt_s = tec.get("output_dt_s")
         self.tec_ipp_altitude_km = tec.get("ipp_altitude_km", 350.0)
+        self.tec_receiver_format = tec.get("receiver_format")
+        self.tec_orbit_format = tec.get("orbit_format")
         self.tec_receiver_csv = tec.get("receiver_csv")
+        self.tec_receiver_listesta = tec.get("receiver_listesta")
         self.tec_orbit_h5 = tec.get("orbit_h5")
+        self.tec_orbit_pos = tec.get("orbit_pos")
         self.tec_receiver_code = tec.get("receiver_code")
         self.tec_sat_id = tec.get("sat_id")
         self.tec_constellation = tec.get("constellation")
         self.tec_prn = tec.get("prn")
+        self.tec_satpos_root = tec.get("satpos_root")
+        self.tec_satpos_date = tec.get("satpos_date")
+        self.tec_sat_number = tec.get("sat_number")
+        self.tec_sat_mapping_file = tec.get("sat_mapping_file")
+        self.tec_start_offset_s = tec.get("start_offset_s", 0.0)
         
 
     def assign_source(self, source):
         if hasattr(self, 'source') and self.source is not None:
-            print("Source already exists and will be updated.")
+            _log.info("Source already exists and will be updated.")
         self.source = source
 
     def assign_atmosphere(self):
@@ -397,7 +416,6 @@ class Model3D(ModelPlotMixin):
             )
             if not sig_path.exists():
                 raise FileNotFoundError(f"Signature file does not exist: {sig_path}")
-            import json
             with sig_path.open("r", encoding="utf-8") as fh:
                 raw_sig_data = json.load(fh)
             expected_payload = model_io.normalize_signature_payload(raw_sig_data)
@@ -658,7 +676,6 @@ class Model3D(ModelPlotMixin):
             and raypaths_file.exists()
             and signature_file.exists()
         ):
-            import json
             with signature_file.open("r", encoding="utf-8") as fh:
                 saved_signature_raw = json.load(fh)
             saved_signature_payload = model_io.normalize_signature_payload(saved_signature_raw)
@@ -698,7 +715,6 @@ class Model3D(ModelPlotMixin):
             "signature_hash": signature_hash,
             "signature": signature_payload,
         }
-        import json
         with signature_file.open("w", encoding="utf-8") as fh:
             json.dump(signature_payload_to_write, fh, indent=2, sort_keys=True)
 
@@ -787,9 +803,14 @@ class Model3D(ModelPlotMixin):
                 try:
                     results[k] = fut.result()
                 except Exception as exc:
+                    # Intentionally broad: grid-wide jobs should continue even when
+                    # a single column fails due to transient model/dependency issues.
                     lat_k, lon_k = arg_list[k][0], arg_list[k][1]
                     _log.warning(
-                        "Ionosphere failed at lat=%.2f lon=%.2f: %s", lat_k, lon_k, exc
+                        "Ionosphere failed at lat=%.2f lon=%.2f; storing NaN profile.",
+                        lat_k,
+                        lon_k,
+                        exc_info=exc,
                     )
                     results[k] = np.full(len(altitudes), np.nan)
 
@@ -877,9 +898,14 @@ class Model3D(ModelPlotMixin):
                 try:
                     results[k] = fut.result()
                 except Exception as exc:
+                    # Intentionally broad: grid-wide jobs should continue even when
+                    # a single column fails due to transient model/dependency issues.
                     lat_k, lon_k = arg_list[k][0], arg_list[k][1]
                     _log.warning(
-                        "Magnetic field failed at lat=%.2f lon=%.2f: %s", lat_k, lon_k, exc
+                        "Magnetic field failed at lat=%.2f lon=%.2f; storing NaN profile.",
+                        lat_k,
+                        lon_k,
+                        exc_info=exc,
                     )
                     results[k] = {v: np.full(len(altitudes), np.nan) for v in _MAG_VARS}
 
@@ -1201,7 +1227,6 @@ class Model3D(ModelPlotMixin):
                 and output_file.exists()
                 and signature_file.exists()
             ):
-                import json
                 with signature_file.open("r", encoding="utf-8") as fh:
                     saved_raw = json.load(fh)
                 saved_payload = model_io.normalize_signature_payload(saved_raw)
@@ -1226,7 +1251,6 @@ class Model3D(ModelPlotMixin):
 
         continuity.attrs["continuity_loaded_from_cache"] = 0
         continuity.attrs["continuity_signature_hash"] = signature_hash
-        import json
         continuity.attrs["continuity_signature_payload"] = json.dumps(
             signature_payload, sort_keys=True
         )
@@ -1249,11 +1273,20 @@ class Model3D(ModelPlotMixin):
         receiver_positions=None,
         satellite_positions=None,
         receiver_code=None,
+        receiver_format=None,
         sat_id=None,
         constellation=None,
         prn=None,
+        sat_number=None,
         receiver_csv=None,
+        receiver_listesta=None,
         orbit_h5=None,
+        orbit_pos=None,
+        orbit_format=None,
+        satpos_root=None,
+        satpos_date=None,
+        sat_mapping_file=None,
+        start_offset_s=None,
         dNe=None,
         tec_config=None,
     ):
@@ -1269,16 +1302,34 @@ class Model3D(ModelPlotMixin):
             When omitted, load from ``[tec].orbit_h5``.
         receiver_code : str, optional
             Receiver code to select from the CSV.
+        receiver_format : str, optional
+            Receiver input format. Supported values: ``"csv"`` or ``"listesta"``.
         sat_id : str, optional
             Satellite ID (e.g., ``"G21"``).
         constellation : str, optional
             Constellation code (e.g., ``"GPS"``) used with ``prn``.
         prn : int, optional
             Satellite PRN used with ``constellation``.
+        sat_number : int, optional
+            Legacy SATPOS satellite number for mapping-file workflows.
         receiver_csv : str or Path, optional
             CSV path for receiver positions. Defaults to ``[tec].receiver_csv``.
+        receiver_listesta : str or Path, optional
+            Legacy listesta station file path. Defaults to ``[tec].receiver_listesta``.
         orbit_h5 : str or Path, optional
             HDF5 path for orbits. Defaults to ``[tec].orbit_h5``.
+        orbit_pos : str or Path, optional
+            Legacy SATPOS file path. Defaults to ``[tec].orbit_pos``.
+        orbit_format : str, optional
+            Orbit input format. Supported values: ``"h5"`` or ``"pos"``.
+        satpos_root : str or Path, optional
+            Legacy SATPOS root path for folder-based file lookup.
+        satpos_date : str, optional
+            Legacy SATPOS date token for folder-based lookup.
+        sat_mapping_file : str or Path, optional
+            Mapping CSV with columns ``sat_number`` and ``sat_id``.
+        start_offset_s : float, optional
+            Start offset in seconds relative to event origin for legacy SATPOS.
         dNe : xr.DataArray, optional
             Electron density perturbation (m^-3) with time dimension.
         tec_config : pyionoseis.tec.TECConfig, optional
@@ -1302,29 +1353,95 @@ class Model3D(ModelPlotMixin):
             )
 
         if receiver_positions is None:
+            receiver_format = receiver_format or self.tec_receiver_format
             receiver_csv = receiver_csv or self.tec_receiver_csv
+            receiver_listesta = receiver_listesta or self.tec_receiver_listesta
             receiver_code = receiver_code or self.tec_receiver_code
-            if receiver_csv is None:
-                raise ValueError("receiver_csv must be provided for TEC computation.")
-            receiver_positions = tec_io.load_receiver_positions_csv(
-                receiver_csv, receiver_code
-            )
+            if receiver_format is None:
+                receiver_format = "csv" if receiver_csv is not None else "listesta"
+
+            if str(receiver_format).lower() == "csv":
+                if receiver_csv is None:
+                    raise ValueError(
+                        "receiver_csv must be provided when receiver_format='csv'."
+                    )
+                receiver_positions = tec_io.load_receiver_positions_csv(
+                    receiver_csv,
+                    receiver_code,
+                )
+            elif str(receiver_format).lower() == "listesta":
+                if receiver_listesta is None:
+                    raise ValueError(
+                        "receiver_listesta must be provided when receiver_format='listesta'."
+                    )
+                receiver_positions = tec_io.load_receiver_positions_listesta(
+                    receiver_listesta,
+                    receiver_code,
+                )
+            else:
+                raise ValueError(
+                    "receiver_format must be one of: 'csv', 'listesta'."
+                )
 
         if satellite_positions is None:
+            orbit_format = orbit_format or self.tec_orbit_format
             orbit_h5 = orbit_h5 or self.tec_orbit_h5
+            orbit_pos = orbit_pos or self.tec_orbit_pos
             sat_id = sat_id or self.tec_sat_id
             constellation = constellation or self.tec_constellation
             prn = prn or self.tec_prn
-            if orbit_h5 is None:
-                raise ValueError("orbit_h5 must be provided for TEC computation.")
-            satellite_positions = tec_io.load_orbits_hdf5(
-                orbit_h5,
-                event_time=self.source.get_time(),
-                sat_id=sat_id,
-                constellation=constellation,
-                prn=prn,
-                output_dt_s=tec_config.output_dt_s,
+            sat_number = sat_number or self.tec_sat_number
+            satpos_root = satpos_root or self.tec_satpos_root
+            satpos_date = satpos_date or self.tec_satpos_date
+            sat_mapping_file = sat_mapping_file or self.tec_sat_mapping_file
+            start_offset_s = (
+                self.tec_start_offset_s
+                if start_offset_s is None
+                else float(start_offset_s)
             )
+
+            if orbit_format is None:
+                orbit_format = "h5" if orbit_h5 is not None else "pos"
+
+            if str(orbit_format).lower() == "h5":
+                if orbit_h5 is None:
+                    raise ValueError(
+                        "orbit_h5 must be provided when orbit_format='h5'."
+                    )
+                satellite_positions = tec_io.load_orbits_hdf5(
+                    orbit_h5,
+                    event_time=self.source.get_time(),
+                    sat_id=sat_id,
+                    constellation=constellation,
+                    prn=prn,
+                    output_dt_s=tec_config.output_dt_s,
+                )
+            elif str(orbit_format).lower() == "pos":
+                if orbit_pos is None:
+                    if satpos_root is None or satpos_date is None or sat_number is None:
+                        raise ValueError(
+                            "orbit_pos or (satpos_root, satpos_date, sat_number) "
+                            "must be provided when orbit_format='pos'."
+                        )
+                    orbit_pos = tec_io.build_satpos_file_path(
+                        satpos_root,
+                        str(satpos_date),
+                        int(sat_number),
+                    )
+
+                satellite_positions = tec_io.load_orbits_pos(
+                    orbit_pos,
+                    event_time=self.source.get_time(),
+                    sat_id=sat_id,
+                    constellation=constellation,
+                    prn=prn,
+                    sat_number=sat_number,
+                    sat_mapping_file=sat_mapping_file,
+                    start_offset_s=float(start_offset_s),
+                    output_dt_s=tec_config.output_dt_s,
+                )
+            else:
+                raise ValueError("orbit_format must be one of: 'h5', 'pos'.")
 
         if dNe is None and self.continuity is not None and "dNe" in self.continuity:
             dNe = self.continuity["dNe"]
@@ -1361,7 +1478,7 @@ class Model3D(ModelPlotMixin):
 
     def print_info(self):
         """
-        Print comprehensive information about the Model3D object.
+        Log comprehensive information about the Model3D object.
         
         This method provides detailed information about:
         - Basic model parameters
@@ -1370,74 +1487,88 @@ class Model3D(ModelPlotMixin):
         - Available data variables
         - Model states (atmosphere, ionosphere, magnetic field)
         """
-        print("=" * 80)
-        print("MODEL3D INFORMATION")
-        print("=" * 80)
+        lines = []
+        lines.append("=" * 80)
+        lines.append("MODEL3D INFORMATION")
+        lines.append("=" * 80)
         
         # Basic Model Information
-        print(f"Model Name: {self.name}")
-        print(f"Model Radius: {self.radius} km")
-        print(f"Model Height: {self.height} km")
-        print(f"Include Winds: {self.winds}")
-        print(f"Grid Spacing: {self.grid_spacing} degrees")
-        print(f"Height Spacing: {self.height_spacing} km")
+        lines.append(f"Model Name: {self.name}")
+        lines.append(f"Model Radius: {self.radius} km")
+        lines.append(f"Model Height: {self.height} km")
+        lines.append(f"Include Winds: {self.winds}")
+        lines.append(f"Grid Spacing: {self.grid_spacing} degrees")
+        lines.append(f"Height Spacing: {self.height_spacing} km")
         
         # Source Information
-        print("\nSOURCE INFORMATION:")
+        lines.append("")
+        lines.append("SOURCE INFORMATION:")
         if hasattr(self, 'source') and self.source is not None:
-            print(f"  Latitude: {self.source.get_latitude():.4f}°")
-            print(f"  Longitude: {self.source.get_longitude():.4f}°")
-            print(f"  Time: {self.source.get_time()}")
+            lines.append(f"  Latitude: {self.source.get_latitude():.4f}°")
+            lines.append(f"  Longitude: {self.source.get_longitude():.4f}°")
+            lines.append(f"  Time: {self.source.get_time()}")
             if hasattr(self.source, 'get_depth'):
-                print(f"  Depth: {self.source.get_depth()} km")
+                lines.append(f"  Depth: {self.source.get_depth()} km")
         else:
-            print("  No source assigned")
+            lines.append("  No source assigned")
         
         # Grid Information
-        print("\nGRID INFORMATION:")
+        lines.append("")
+        lines.append("GRID INFORMATION:")
         if hasattr(self, 'grid') and self.grid is not None:
             if hasattr(self, 'lat_extent'):
-                print(f"  Latitude extent: {self.lat_extent[0]:.4f}° to {self.lat_extent[1]:.4f}°")
+                lines.append(
+                    f"  Latitude extent: {self.lat_extent[0]:.4f}° to {self.lat_extent[1]:.4f}°"
+                )
             if hasattr(self, 'lon_extent'):
-                print(f"  Longitude extent: {self.lon_extent[0]:.4f}° to {self.lon_extent[1]:.4f}°")
+                lines.append(
+                    f"  Longitude extent: {self.lon_extent[0]:.4f}° to {self.lon_extent[1]:.4f}°"
+                )
             
             # Grid dimensions
             if hasattr(self.grid, 'sizes'):
                 # This is an xarray Dataset/DataArray with sizes
                 grid_shape = self.grid.sizes
-                print(f"  Grid dimensions: {dict(grid_shape)}")
+                lines.append(f"  Grid dimensions: {dict(grid_shape)}")
                 total_points = 1
                 for dim, size in grid_shape.items():
                     total_points *= size
-                print(f"  Total grid points: {total_points:,}")
+                lines.append(f"  Total grid points: {total_points:,}")
             elif hasattr(self.grid, 'shape'):
                 # This is a numpy array or similar
                 grid_shape = self.grid.shape
-                print(f"  Grid shape: {grid_shape}")
+                lines.append(f"  Grid shape: {grid_shape}")
                 total_points = 1
                 for dim in grid_shape:
                     total_points *= dim
-                print(f"  Total grid points: {total_points:,}")
+                lines.append(f"  Total grid points: {total_points:,}")
             else:
-                print("  Grid shape: Unknown")
+                lines.append("  Grid shape: Unknown")
             
             # Coordinate ranges
             if hasattr(self.grid, 'coords'):
                 coords = self.grid.coords
                 if 'latitude' in coords:
                     lat_vals = coords['latitude'].values
-                    print(f"  Latitude range: {lat_vals.min():.4f}° to {lat_vals.max():.4f}° ({len(lat_vals)} points)")
+                    lines.append(
+                        f"  Latitude range: {lat_vals.min():.4f}° to {lat_vals.max():.4f}° ({len(lat_vals)} points)"
+                    )
                 if 'longitude' in coords:
                     lon_vals = coords['longitude'].values
-                    print(f"  Longitude range: {lon_vals.min():.4f}° to {lon_vals.max():.4f}° ({len(lon_vals)} points)")
+                    lines.append(
+                        f"  Longitude range: {lon_vals.min():.4f}° to {lon_vals.max():.4f}° ({len(lon_vals)} points)"
+                    )
                 if 'altitude' in coords:
                     alt_vals = coords['altitude'].values
-                    print(f"  Altitude range: {alt_vals.min():.1f} to {alt_vals.max():.1f} km ({len(alt_vals)} points)")
+                    lines.append(
+                        f"  Altitude range: {alt_vals.min():.1f} to {alt_vals.max():.1f} km ({len(alt_vals)} points)"
+                    )
         else:
-            print("  No grid created yet")
+            lines.append("  No grid created yet")
         
         # Available Data Variables
-        print("\nAVAILABLE DATA VARIABLES:")
+        lines.append("")
+        lines.append("AVAILABLE DATA VARIABLES:")
         if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
             if len(self.grid.data_vars) > 0:
                 # Group variables by type
@@ -1463,22 +1594,29 @@ class Model3D(ModelPlotMixin):
                         other_vars.append(var)
                 
                 if atmospheric_vars:
-                    print(f"  Atmospheric variables: {', '.join(atmospheric_vars)}")
+                    lines.append(f"  Atmospheric variables: {', '.join(atmospheric_vars)}")
                 if ionospheric_vars:
-                    print(f"  Ionospheric variables: {', '.join(ionospheric_vars)}")
+                    lines.append(f"  Ionospheric variables: {', '.join(ionospheric_vars)}")
                 if magnetic_geodetic_vars:
-                    print(f"  Magnetic field (geodetic): {', '.join(magnetic_geodetic_vars)}")
+                    lines.append(
+                        f"  Magnetic field (geodetic): {', '.join(magnetic_geodetic_vars)}"
+                    )
                 if magnetic_geocentric_vars:
-                    print(f"  Magnetic field (geocentric): {', '.join(magnetic_geocentric_vars)}")
+                    lines.append(
+                        f"  Magnetic field (geocentric): {', '.join(magnetic_geocentric_vars)}"
+                    )
                 if magnetic_derived_vars:
-                    print(f"  Magnetic field (derived): {', '.join(magnetic_derived_vars)}")
+                    lines.append(
+                        f"  Magnetic field (derived): {', '.join(magnetic_derived_vars)}"
+                    )
                 if other_vars:
-                    print(f"  Other variables: {', '.join(other_vars)}")
+                    lines.append(f"  Other variables: {', '.join(other_vars)}")
                 
-                print(f"  Total variables: {len(self.grid.data_vars)}")
+                lines.append(f"  Total variables: {len(self.grid.data_vars)}")
                 
                 # Show variable ranges for numeric data
-                print("\n  Variable Ranges:")
+                lines.append("")
+                lines.append("  Variable Ranges:")
                 for var in sorted(self.grid.data_vars):
                     if var != 'grid_points':  # Skip the grid_points variable
                         try:
@@ -1499,58 +1637,61 @@ class Model3D(ModelPlotMixin):
                                     units = " K"
                                 elif var in ['electron_density']:
                                     units = " /m³"
-                                print(f"    {var}: {min_val:.2f} to {max_val:.2f}{units}")
-                        except Exception:
-                            print(f"    {var}: [data present]")
+                                lines.append(f"    {var}: {min_val:.2f} to {max_val:.2f}{units}")
+                        except (ValueError, TypeError, AttributeError):
+                            lines.append(f"    {var}: [data present]")
             else:
-                print("  No data variables computed yet")
+                lines.append("  No data variables computed yet")
         else:
-            print("  No data variables (grid not created)")
+            lines.append("  No data variables (grid not created)")
         
         # Model States
-        print("\nMODEL STATES:")
+        lines.append("")
+        lines.append("MODEL STATES:")
         
         # Atmosphere model
         if hasattr(self, 'atmosphere_model'):
-            print(f"  Atmosphere model: {self.atmosphere_model}")
+            lines.append(f"  Atmosphere model: {self.atmosphere_model}")
             if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
                 atm_vars = [v for v in self.grid.data_vars if v in ['density', 'pressure', 'temperature', 'velocity']]
-                print(f"    Status: {'Computed' if atm_vars else 'Not computed'}")
+                lines.append(f"    Status: {'Computed' if atm_vars else 'Not computed'}")
                 if atm_vars:
-                    print(f"    Variables: {', '.join(atm_vars)}")
+                    lines.append(f"    Variables: {', '.join(atm_vars)}")
         
         # Ionosphere model
         if hasattr(self, 'ionosphere_model'):
-            print(f"  Ionosphere model: {self.ionosphere_model}")
+            lines.append(f"  Ionosphere model: {self.ionosphere_model}")
             if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
                 iono_computed = 'electron_density' in self.grid.data_vars
-                print(f"    Status: {'Computed' if iono_computed else 'Not computed'}")
+                lines.append(f"    Status: {'Computed' if iono_computed else 'Not computed'}")
         
         # Magnetic field model
         if hasattr(self, 'magnetic_field_model'):
-            print(f"  Magnetic field model: {self.magnetic_field_model}")
+            lines.append(f"  Magnetic field model: {self.magnetic_field_model}")
             if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'data_vars'):
                 mag_vars = [v for v in self.grid.data_vars if v in ['Be', 'Bn', 'Bu', 'Br', 'Btheta', 'Bphi', 'inclination', 'declination']]
-                print(f"    Status: {'Computed' if mag_vars else 'Not computed'}")
+                lines.append(f"    Status: {'Computed' if mag_vars else 'Not computed'}")
                 if mag_vars:
                     geodetic = [v for v in mag_vars if v in ['Be', 'Bn', 'Bu']]
                     geocentric = [v for v in mag_vars if v in ['Br', 'Btheta', 'Bphi']]
                     derived = [v for v in mag_vars if v in ['inclination', 'declination']]
                     if geodetic:
-                        print(f"    Geodetic components: {', '.join(geodetic)}")
+                        lines.append(f"    Geodetic components: {', '.join(geodetic)}")
                     if geocentric:
-                        print(f"    Geocentric components: {', '.join(geocentric)}")
+                        lines.append(f"    Geocentric components: {', '.join(geocentric)}")
                     if derived:
-                        print(f"    Derived parameters: {', '.join(derived)}")
+                        lines.append(f"    Derived parameters: {', '.join(derived)}")
         
         # Grid attributes
         if hasattr(self, 'grid') and self.grid is not None and hasattr(self.grid, 'attrs') and self.grid.attrs:
-            print("\nGRID ATTRIBUTES:")
+            lines.append("")
+            lines.append("GRID ATTRIBUTES:")
             for key, value in self.grid.attrs.items():
                 if not key.endswith('_description'):  # Skip long description attributes
-                    print(f"  {key}: {value}")
+                    lines.append(f"  {key}: {value}")
         
-        print("=" * 80)
+        lines.append("=" * 80)
+        _log.info("\n%s", "\n".join(lines))
 
     def make_3Dgrid(self):
         """
