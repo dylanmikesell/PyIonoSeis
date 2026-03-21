@@ -284,6 +284,114 @@ class TestModelOrchestrator(unittest.TestCase):
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
 
+    def test_assign_continuity_ray_signature_change_recomputes(self):
+        """Ray-signature changes invalidate continuity cache and recompute output."""
+        model = self._new_model_with_grid()
+        self._seed_continuity_inputs(model)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch(
+                "pyionoseis.model.continuity_tools.solve_continuity",
+                side_effect=self._fake_solve_continuity,
+            ) as mocked_solver:
+                model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    output_dir=tmpdir,
+                    reuse_existing=True,
+                    use_kdtree=False,
+                )
+
+                model.raypaths.attrs["raytrace_signature_hash"] = "ray-hash-b"
+                second = model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    output_dir=tmpdir,
+                    reuse_existing=True,
+                    use_kdtree=False,
+                )
+
+        self.assertEqual(mocked_solver.call_count, 2)
+        self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
+
+    def test_assign_continuity_maps_scalars_when_missing_on_grid(self):
+        """Continuity maps travel time and amplitude when grid scalars are absent."""
+        model = self._new_model_with_grid()
+
+        shape = (self.lat.size, self.lon.size, self.alt.size)
+        model.grid["electron_density"] = (
+            ("latitude", "longitude", "altitude"),
+            np.full(shape, 1.0e11),
+        )
+        model.grid["kr"] = (("latitude", "longitude", "altitude"), np.zeros(shape))
+        model.grid["kt"] = (("latitude", "longitude", "altitude"), np.zeros(shape))
+        model.grid["kp"] = (("latitude", "longitude", "altitude"), np.zeros(shape))
+
+        model.raypaths = xr.Dataset(
+            {
+                "travel_time_s": ("ray_point", np.full(4, 10.0)),
+                "transport_amplitude_db": ("ray_point", np.zeros(4)),
+                "ray_lat_deg": ("ray_point", np.array([38.0, 38.0, 38.5, 38.5])),
+                "ray_lon_deg": ("ray_point", np.array([142.0, 142.5, 142.0, 142.5])),
+                "ray_alt_km": ("ray_point", np.array([100.0, 110.0, 100.0, 110.0])),
+            },
+            attrs={"raytrace_signature_hash": "ray-hash-a"},
+        )
+
+        def _map_side_effect(grid, raypaths, ray_var, output_name=None, **kwargs):
+            name = output_name or ray_var
+            count_name = f"{name}_raypoint_count"
+            values = np.full(
+                (
+                    grid.sizes["latitude"],
+                    grid.sizes["longitude"],
+                    grid.sizes["altitude"],
+                ),
+                1.0,
+            )
+            counts = np.full_like(values, 4.0)
+            return xr.Dataset(
+                {
+                    name: (
+                        ("latitude", "longitude", "altitude"),
+                        values,
+                    ),
+                    count_name: (
+                        ("latitude", "longitude", "altitude"),
+                        counts,
+                    ),
+                },
+                coords={
+                    "latitude": grid.coords["latitude"].values,
+                    "longitude": grid.coords["longitude"].values,
+                    "altitude": grid.coords["altitude"].values,
+                },
+            )
+
+        with mock.patch(
+            "pyionoseis.model.wavevector_tools.map_ray_scalar_to_grid",
+            side_effect=_map_side_effect,
+        ) as mocked_map:
+            with mock.patch(
+                "pyionoseis.model.continuity_tools.solve_continuity",
+                side_effect=self._fake_solve_continuity,
+            ):
+                continuity = model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    reuse_existing=False,
+                    use_kdtree=False,
+                )
+
+        self.assertEqual(mocked_map.call_count, 2)
+        self.assertIn("travel_time_s", model.grid.data_vars)
+        self.assertIn("infraga_amplitude", model.grid.data_vars)
+        self.assertIn("travel_time_s", continuity.data_vars)
+        self.assertIn("infraga_amplitude", continuity.data_vars)
+
 
 if __name__ == "__main__":
     unittest.main()
