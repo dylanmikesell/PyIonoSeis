@@ -25,8 +25,16 @@ The linked GitHub issue may still be open until administrative close-out.
     - Major methods are shorter and delegate to isolated units
     - New unit tests cover helper classes/functions
 
-- [ ] Add targeted orchestrator tests for failure and fallback behavior
+- [x] Add targeted orchestrator tests for failure and fallback behavior
   - Issue: #2
+  - Status: implementation complete; issue open pending close-out
+  - Progress:
+    - Added orchestrator-focused test module: `tests/test_model_orchestrator.py`
+    - Added fallback tests for failed ionosphere/magnetic worker profiles storing NaN
+    - Added optional-dependency absence coverage for `PPIGRF_AVAILABLE=False`
+    - Added continuity cache tests for hit, signature-parameter miss, force recompute, and ray-signature miss
+    - Added continuity scalar-mapping-path test when travel time/amplitude are absent on grid
+    - Validated with `.venv` unittest runs for focused and related suites
   - Scope:
     - Test fallback-to-NaN behavior for profile worker failures
     - Test optional dependency absence paths
@@ -111,8 +119,7 @@ The linked GitHub issue may still be open until administrative close-out.
     - Checklist stays current and actionable
 
 ## Suggested Implementation Order
-1. P0 orchestrator tests (safety net first)
-2. P0 `Model3D` decomposition
-3. P1 legacy-style module normalization
-4. P2 maintenance workflow (periodic triage cadence)
-5. Administrative close-out for completed issues (#3, #4, #6)
+1. P0 `Model3D` decomposition
+2. P1 legacy-style module normalization
+3. P2 maintenance workflow (periodic triage cadence)
+4. Administrative close-out for completed issues (#2, #3, #4, #6)
