@@ -20,6 +20,9 @@ License: MIT
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import logging
+
+_log = logging.getLogger(__name__)
 
 # Try to import ppigrf with graceful fallback
 try:
@@ -113,7 +116,7 @@ class MagneticField1D:
 
     def print(self):
         """Print the string representation of the object."""
-        print(self.__str__())
+        _log.info("%s", self.__str__())
 
     def compute_igrf_model(self):
         """

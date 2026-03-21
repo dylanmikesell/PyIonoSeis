@@ -1,6 +1,9 @@
 from typing import Any
 import toml
 from datetime import datetime
+import logging
+
+_log = logging.getLogger(__name__)
 
 class EarthquakeSource:
     def __init__(self, toml_file=None) -> None:
@@ -81,7 +84,7 @@ class EarthquakeSource:
         Returns:
             None
         """
-        print(self.__str__())
+        _log.info("%s", self.__str__())
 
     def get_latitude(self) -> float | Any:
         """

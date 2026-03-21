@@ -7,6 +7,7 @@ electron density, using various ionospheric models.
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import logging
 
 # Optional import for iri2020
 try:
@@ -14,6 +15,8 @@ try:
     IRI2020_AVAILABLE = True
 except ImportError:
     IRI2020_AVAILABLE = False
+
+_log = logging.getLogger(__name__)
 
 
 class Ionosphere1D:
@@ -111,7 +114,7 @@ class Ionosphere1D:
         """
         Prints the string representation of the Ionosphere1D object.
         """
-        print(self.__str__())
+        _log.info("%s", self.__str__())
         
     def compute_iri2020_model(self):
         """
@@ -179,13 +182,13 @@ class Ionosphere1D:
         # Store additional IRI2020 parameters if available
         try:
             self.ionosphere.attrs['TEC'] = float(iri_data.TEC.values)
-        except Exception:
-            pass
+        except (AttributeError, TypeError, ValueError) as exc:
+            _log.debug("IRI2020 TEC attribute unavailable: %s", exc)
             
         try:
             self.ionosphere.attrs['hmF2'] = float(iri_data.hmF2.values)
-        except Exception:
-            pass
+        except (AttributeError, TypeError, ValueError) as exc:
+            _log.debug("IRI2020 hmF2 attribute unavailable: %s", exc)
             
     def plot(self):
         """

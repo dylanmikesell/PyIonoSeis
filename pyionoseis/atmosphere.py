@@ -6,6 +6,9 @@ import msise00
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+import logging
+
+_log = logging.getLogger(__name__)
 
 '''
 For MSISE00, the units are as follows:
@@ -96,7 +99,7 @@ class Atmosphere1D:
                 )
 
     def print(self):
-        print(self.__str__())
+        _log.info("%s", self.__str__())
         
     def compute_mise00_model(self):
         """

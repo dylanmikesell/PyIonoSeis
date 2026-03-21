@@ -35,7 +35,7 @@ def accel_sph_available() -> bool:
         accel_bin = Path(run_infraga.bin_path) / "infraga-accel-sph"
         if accel_bin.exists() and os.access(accel_bin, os.X_OK):
             return True
-    except Exception:
+    except (ImportError, AttributeError, OSError):
         pass
 
     # Fallback for environments where binary is provided on PATH directly.

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 try:
     from scipy.spatial import cKDTree
     SCIPY_AVAILABLE = True
-except Exception:  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover - optional dependency
     cKDTree = None
     SCIPY_AVAILABLE = False
 import numpy as np
