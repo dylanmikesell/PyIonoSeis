@@ -98,7 +98,3 @@ nav:
     - Report Issues: https://github.com/dylanmikesell/pyionoseis/issues
     - Examples:
         - examples/intro.ipynb
-    - API Reference:
-          - pyionoseis module: pyionoseis.md
-          - common module: common.md
-        #   - model module: model.md

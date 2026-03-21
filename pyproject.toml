@@ -32,8 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
-[project.entry-points."console_scripts"]
-pyionoseis = "pyionoseis.cli:main"
+[project.scripts]
 pyionoseis-test = "pyionoseis.tests_runner:main"
 
 [project.optional-dependencies]

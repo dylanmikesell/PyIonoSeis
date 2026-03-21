@@ -23,10 +23,9 @@ def _resolve_tests_dir() -> Path | None:
 def main() -> int:
     tests_dir = _resolve_tests_dir()
     if tests_dir is None or not tests_dir.exists():
-        print(
+        sys.stderr.write(
             "Tests are not installed. Install from a source checkout or a "
-            "distribution that includes tests.",
-            file=sys.stderr,
+            "distribution that includes tests.\n"
         )
         return 2
 
