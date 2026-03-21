@@ -118,15 +118,30 @@ The linked GitHub issue may still be open until administrative close-out.
 
 ## P2: Maintenance Workflow
 
-- [ ] Add a lightweight periodic debt triage
+- [x] Add a lightweight periodic debt triage
   - Issue: #5
+  - Status: implementation complete; issue open pending close-out
+  - Progress:
+    - Added reusable release triage issue template: `.github/ISSUE_TEMPLATE/release_debt_triage.md`
+    - Added explicit release triage checklist below for maintainers
   - Scope:
     - During releases, review this checklist and re-prioritize
     - Close or split items based on scope and impact
   - Done when:
     - Checklist stays current and actionable
 
+### Release Debt Triage Checklist
+Run this once per release candidate or tag cut.
+
+1. Open a GitHub issue from template: `Release Debt Triage`.
+2. Review all items in this file and verify status accuracy (`[x]` vs `[ ]`).
+3. Re-prioritize open items based on current risk and upcoming release goals.
+4. Close completed debt issues and update their corresponding TODO entries.
+5. Split oversized debt items into smaller follow-up issues when needed.
+6. Remove or archive debt items that are no longer relevant.
+7. Update the Suggested Implementation Order section.
+8. Record outcomes in the triage issue (closed issues, new issues, priority changes).
+
 ## Suggested Implementation Order
 1. P0 `Model3D` decomposition
-2. P2 maintenance workflow (periodic triage cadence)
-3. Administrative close-out for completed issues (#2, #3, #4, #6, #7)
+2. Administrative close-out for completed issues (#2, #3, #4, #5, #6, #7)
