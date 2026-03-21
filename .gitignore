@@ -114,6 +114,7 @@ pyionoseis/legacy/
 example/**/*.dat
 example/**/*.json
 example/**/*.zcuvd
+example/VAN
 
 pyionoseis/iri2020*
 pypi_token.txt
