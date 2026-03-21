@@ -19,3 +19,12 @@ height_spacing = 50.0  # (km) height grid spacing (default: 20.0)
 t0_s = 0.0
 tmax_s = 3600.0
 dt_s = 10.0
+
+[tec]
+elevation_mask_deg = 20.0
+output_dt_s = 10.0
+ipp_altitude_km = 350.0
+receiver_csv = "example/inputs/gnss_receivers_list_complete.csv"
+receiver_code = "TUA1"
+orbit_h5 = "example/inputs/SatsOrbs2010298.h5"
+sat_id = "G21"

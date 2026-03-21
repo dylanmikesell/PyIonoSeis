@@ -1,0 +1,3 @@
+[codespell]
+skip = *.csv,*.geojson,*.json,*.js,*.html,*cff,*.ipynb,./.git,./build,./site,./.venv,./pyionoseis-dev,./example
+ignore-words-list = aci,acount,hist,dNe,dne,Bu,bu,ue

@@ -17,6 +17,8 @@ import xarray as xr
 from pyionoseis import infraga as infraga_tools
 from pyionoseis import continuity as continuity_tools
 from pyionoseis import model_io
+from pyionoseis import tec as tec_tools
+from pyionoseis import tec_io
 from pyionoseis import wavevector as wavevector_tools
 from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
@@ -133,6 +135,15 @@ class Model3D(ModelPlotMixin):
             self.continuity_tmax_s = None
             self.continuity_dt_s = None
             self.continuity = None
+            self.tec_elevation_mask_deg = 20.0
+            self.tec_output_dt_s = None
+            self.tec_ipp_altitude_km = 350.0
+            self.tec_receiver_csv = None
+            self.tec_orbit_h5 = None
+            self.tec_receiver_code = None
+            self.tec_sat_id = None
+            self.tec_constellation = None
+            self.tec_prn = None
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -154,6 +165,17 @@ class Model3D(ModelPlotMixin):
         self.continuity_tmax_s = continuity.get("tmax_s")
         self.continuity_dt_s = continuity.get("dt_s")
         self.continuity = None
+
+        tec = data.get("tec", {})
+        self.tec_elevation_mask_deg = tec.get("elevation_mask_deg", 20.0)
+        self.tec_output_dt_s = tec.get("output_dt_s")
+        self.tec_ipp_altitude_km = tec.get("ipp_altitude_km", 350.0)
+        self.tec_receiver_csv = tec.get("receiver_csv")
+        self.tec_orbit_h5 = tec.get("orbit_h5")
+        self.tec_receiver_code = tec.get("receiver_code")
+        self.tec_sat_id = tec.get("sat_id")
+        self.tec_constellation = tec.get("constellation")
+        self.tec_prn = tec.get("prn")
         
 
     def assign_source(self, source):
@@ -1221,6 +1243,106 @@ class Model3D(ModelPlotMixin):
 
         self.continuity = continuity
         return continuity
+
+    def compute_los_tec(
+        self,
+        receiver_positions=None,
+        satellite_positions=None,
+        receiver_code=None,
+        sat_id=None,
+        constellation=None,
+        prn=None,
+        receiver_csv=None,
+        orbit_h5=None,
+        dNe=None,
+        tec_config=None,
+    ):
+        """Compute LOS TEC for a receiver-satellite pair.
+
+        Parameters
+        ----------
+        receiver_positions : dict or xr.Dataset, optional
+            Receiver positions with ``latitude``, ``longitude``, ``height_km``.
+            When omitted, load from ``[tec].receiver_csv``.
+        satellite_positions : dict or xr.Dataset, optional
+            Satellite positions with ``x_km``, ``y_km``, ``z_km`` and ``time``.
+            When omitted, load from ``[tec].orbit_h5``.
+        receiver_code : str, optional
+            Receiver code to select from the CSV.
+        sat_id : str, optional
+            Satellite ID (e.g., ``"G21"``).
+        constellation : str, optional
+            Constellation code (e.g., ``"GPS"``) used with ``prn``.
+        prn : int, optional
+            Satellite PRN used with ``constellation``.
+        receiver_csv : str or Path, optional
+            CSV path for receiver positions. Defaults to ``[tec].receiver_csv``.
+        orbit_h5 : str or Path, optional
+            HDF5 path for orbits. Defaults to ``[tec].orbit_h5``.
+        dNe : xr.DataArray, optional
+            Electron density perturbation (m^-3) with time dimension.
+        tec_config : pyionoseis.tec.TECConfig, optional
+            Override TEC configuration settings.
+
+        Returns
+        -------
+        xr.Dataset
+            Dataset with TEC time series and LOS metadata.
+        """
+        if not hasattr(self, "grid"):
+            raise AttributeError("3D grid not created. Call make_3Dgrid() first.")
+        if not hasattr(self, "source"):
+            raise AttributeError("Source not assigned to the model.")
+
+        if tec_config is None:
+            tec_config = tec_tools.TECConfig(
+                elevation_mask_deg=float(self.tec_elevation_mask_deg),
+                output_dt_s=self.tec_output_dt_s,
+                ipp_altitude_km=float(self.tec_ipp_altitude_km),
+            )
+
+        if receiver_positions is None:
+            receiver_csv = receiver_csv or self.tec_receiver_csv
+            receiver_code = receiver_code or self.tec_receiver_code
+            if receiver_csv is None:
+                raise ValueError("receiver_csv must be provided for TEC computation.")
+            receiver_positions = tec_io.load_receiver_positions_csv(
+                receiver_csv, receiver_code
+            )
+
+        if satellite_positions is None:
+            orbit_h5 = orbit_h5 or self.tec_orbit_h5
+            sat_id = sat_id or self.tec_sat_id
+            constellation = constellation or self.tec_constellation
+            prn = prn or self.tec_prn
+            if orbit_h5 is None:
+                raise ValueError("orbit_h5 must be provided for TEC computation.")
+            satellite_positions = tec_io.load_orbits_hdf5(
+                orbit_h5,
+                event_time=self.source.get_time(),
+                sat_id=sat_id,
+                constellation=constellation,
+                prn=prn,
+                output_dt_s=tec_config.output_dt_s,
+            )
+
+        if dNe is None and self.continuity is not None and "dNe" in self.continuity:
+            dNe = self.continuity["dNe"]
+
+        receiver_id = receiver_positions.get("code") if isinstance(receiver_positions, dict) else None
+        satellite_id = sat_id
+        if satellite_id is None and constellation is not None and prn is not None:
+            satellite_id = f"{constellation}{int(prn):02d}"
+
+        return tec_tools.compute_los_tec(
+            grid=self.grid,
+            receiver_positions=receiver_positions,
+            satellite_positions=satellite_positions,
+            dNe=dNe,
+            tec_config=tec_config,
+            receiver_id=receiver_id,
+            satellite_id=satellite_id,
+        )
 
 
         

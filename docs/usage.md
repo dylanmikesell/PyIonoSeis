@@ -118,6 +118,27 @@ model.plot_variable(variable="velocity")
 model.plot_variable(variable="kr", altitude_slice=300)
 ```
 
+## Line-of-Sight TEC
+
+Compute LOS TEC using receiver and orbit inputs listed in the TOML file:
+
+```python
+from pyionoseis.model import Model3D
+from pyionoseis.source import EarthquakeSource
+
+source = EarthquakeSource("event.toml")
+model = Model3D("event.toml")
+model.assign_source(source)
+model.make_3Dgrid()
+model.assign_ionosphere()
+
+# If you already computed continuity, keep `model.continuity` populated.
+tec_ds = model.compute_los_tec()
+print(tec_ds)
+```
+
+See the full mathematical description in [Line-of-Sight TEC](tec.md).
+
 ## Spherical Ray Tracing
 
 `Model3D.trace_rays(...)` uses the infraGA spherical runner only.
