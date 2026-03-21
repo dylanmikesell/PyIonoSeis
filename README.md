@@ -25,13 +25,13 @@ A python package for modeling and anlaysis of coseismic ionospheric disturbances
 From a repo checkout:
 
 ```bash
-python scripts/run_tests.py
+.venv/bin/python scripts/run_tests.py
 ```
 
 This is equivalent to:
 
 ```bash
-python -m unittest discover tests/
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 ```
 
 Post-install testing (tests are packaged):

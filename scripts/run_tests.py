@@ -30,7 +30,16 @@ def main() -> int:
         print("Tests directory not found at repo root.", file=sys.stderr)
         return 2
 
-    suite = unittest.defaultTestLoader.discover(str(tests_dir))
+    # Ensure local package imports resolve when executing this script directly.
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
+
+    suite = unittest.defaultTestLoader.discover(
+        start_dir=str(tests_dir),
+        pattern="test_*.py",
+        top_level_dir=repo_root_str,
+    )
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     return 0 if result.wasSuccessful() else 1

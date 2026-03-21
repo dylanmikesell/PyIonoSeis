@@ -69,7 +69,17 @@ Guard usage with the flag rather than raising at import time.
 - Framework: `unittest` (standard library).
 - Test files live in `tests/`; mirror module names (e.g., `test_infraga.py`).
 - Use `unittest.mock.patch` to stub subprocess calls and optional-dependency code paths.
-- Run tests with: `python -m pytest tests/` or `python -m unittest discover tests/`.
+- Always run Python commands through the repository virtual environment at `.venv/`.
+- Preferred test commands:
+    - `.venv/bin/python scripts/run_tests.py`
+    - `.venv/bin/python -m unittest discover -s tests -p 'test_*.py'`
+    - `.venv/bin/python -m pytest tests/` (if `pytest` is installed in `.venv`)
+
+## Environment Rule
+
+- Do not run project Python commands with system/global interpreters.
+- In chat-driven terminal actions, default to `.venv/bin/python ...`.
+- If `.venv` is missing, create it first and install dependencies before running project code.
 
 ## Common Pitfalls
 

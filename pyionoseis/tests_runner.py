@@ -30,7 +30,11 @@ def main() -> int:
         )
         return 2
 
-    suite = unittest.defaultTestLoader.discover(str(tests_dir))
+    suite = unittest.defaultTestLoader.discover(
+        start_dir=str(tests_dir),
+        pattern="test_*.py",
+        top_level_dir=str(tests_dir.parent),
+    )
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     return 0 if result.wasSuccessful() else 1
