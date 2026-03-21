@@ -145,6 +145,30 @@ class TestModelOrchestrator(unittest.TestCase):
         self.assertTrue(np.isnan(ne[0, 0, :]).all())
         self.assertTrue(np.isfinite(ne[0, 1, :]).all())
 
+    def test_assign_ionosphere_multiple_failures_map_to_expected_columns(self):
+        """Multiple worker failures map to the expected (lat, lon) columns."""
+        model = self._new_model_with_grid()
+
+        call_counter = {"n": 0}
+        failing_calls = {2, 3}
+
+        def _worker_side_effect(args):
+            call_counter["n"] += 1
+            if call_counter["n"] in failing_calls:
+                raise RuntimeError("synthetic worker failure")
+            return np.full(len(self.alt), 3.21e11)
+
+        with mock.patch(
+            "pyionoseis.model._iono_profile_worker", side_effect=_worker_side_effect
+        ):
+            model.assign_ionosphere(max_workers=1)
+
+        ne = model.grid["electron_density"].values
+        self.assertTrue(np.isfinite(ne[0, 0, :]).all())
+        self.assertTrue(np.isnan(ne[0, 1, :]).all())
+        self.assertTrue(np.isnan(ne[1, 0, :]).all())
+        self.assertTrue(np.isfinite(ne[1, 1, :]).all())
+
     def _seed_continuity_inputs(self, model):
         """Populate minimal required inputs for assign_continuity."""
         shape = (self.lat.size, self.lon.size, self.alt.size)
@@ -391,6 +415,41 @@ class TestModelOrchestrator(unittest.TestCase):
         self.assertIn("infraga_amplitude", model.grid.data_vars)
         self.assertIn("travel_time_s", continuity.data_vars)
         self.assertIn("infraga_amplitude", continuity.data_vars)
+
+    def test_assign_continuity_coordinate_change_recomputes_cache(self):
+        """Grid coordinate changes invalidate continuity cache signatures."""
+        model = self._new_model_with_grid()
+        self._seed_continuity_inputs(model)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch(
+                "pyionoseis.model.continuity_tools.solve_continuity",
+                side_effect=self._fake_solve_continuity,
+            ) as mocked_solver:
+                model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    output_dir=tmpdir,
+                    reuse_existing=True,
+                    use_kdtree=False,
+                )
+
+                shifted_lat = model.grid.coords["latitude"].values.copy()
+                shifted_lat[1] = shifted_lat[1] + 1e-9
+                model.grid = model.grid.assign_coords(latitude=shifted_lat)
+
+                second = model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    output_dir=tmpdir,
+                    reuse_existing=True,
+                    use_kdtree=False,
+                )
+
+        self.assertEqual(mocked_solver.call_count, 2)
+        self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
 
 
 if __name__ == "__main__":

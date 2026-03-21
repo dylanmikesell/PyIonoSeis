@@ -3,6 +3,7 @@
 """Tests for infraGA spherical ray tracing integration."""
 
 import tempfile
+import json
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -307,3 +308,32 @@ class TestModelTraceRays(unittest.TestCase):
                     validate_signature=True,
                     signature_file=signature_file,
                 )
+
+    @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
+    @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])
+    def test_trace_rays_signature_payload_has_expected_schema(self, _resolve_cmd, _run_trace):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model = Model3D()
+            source = EarthquakeSource()
+            model.assign_source(source)
+            model.make_3Dgrid()
+            model.atmosphere = cast(Any, _FakeAtmosphere(model.grid.coords["altitude"].values))
+
+            model.trace_rays(type="3d", output_dir=tmpdir, reuse_existing=True)
+
+            signature_files = list(Path(tmpdir).glob("*.signature.json"))
+            self.assertEqual(len(signature_files), 1)
+            with signature_files[0].open("r", encoding="utf-8") as fh:
+                payload = json.load(fh)
+
+            self.assertIn("signature_hash", payload)
+            self.assertIn("signature", payload)
+            self.assertIn("signature_version", payload["signature"])
+            self.assertIn("ray_params", payload["signature"])
+            self.assertIn("profile", payload["signature"])
+            self.assertEqual(payload["signature"]["run_type"], "3d")
+
+    def test_azimuth_sequence_normalizes_wrap_and_deduplicates_endpoints(self):
+        values = Model3D._azimuth_sequence(az_min=0.0, az_max=360.0, az_step=90.0)
+        expected = np.array([0.0, 90.0, 180.0, 270.0])
+        np.testing.assert_allclose(values, expected)
