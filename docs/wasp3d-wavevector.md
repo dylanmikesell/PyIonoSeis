@@ -129,12 +129,9 @@ does not currently emit.
 
 ```mermaid
 flowchart LR
-    A[ray3d_dyn.f
-compute psht, psol] --> B[normalize with metric
-kr, kt, kp]
+    A["ray3d_dyn.f\ncompute psht, psol"] --> B["normalize with metric\nkr, kt, kp"]
     B --> C[bufpts(4:6)]
-    C --> D[outputw_netcdf.f
-wasp_kr, wasp_kt, wasp_kf]
+    C --> D["outputw_netcdf.f\nwasp_kr, wasp_kt, wasp_kf"]
 ```
 
 ## Example

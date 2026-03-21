@@ -46,6 +46,26 @@ Dev install with tooling:
 pip install -e .[dev]
 ```
 
+## Documentation Build
+
+Install only the docs toolchain:
+
+```bash
+pip install -e .[docs]
+```
+
+Build docs locally:
+
+```bash
+.venv/bin/python -m mkdocs build
+```
+
+Serve docs locally for live preview:
+
+```bash
+.venv/bin/python -m mkdocs serve
+```
+
 ## Optional infraGA Dependency
 
 PyIonoSeis requires integration with infraGA.
