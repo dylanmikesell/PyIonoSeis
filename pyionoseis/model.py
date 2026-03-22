@@ -17,6 +17,7 @@ import xarray as xr
 from pyionoseis import infraga as infraga_tools
 from pyionoseis import continuity as continuity_tools
 from pyionoseis import continuity_orchestrator
+from pyionoseis import checkpoint_io
 from pyionoseis import grid_enrichment_orchestrator
 from pyionoseis import model_io
 from pyionoseis import ray_tracing_orchestrator
@@ -29,6 +30,7 @@ from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
 from pyionoseis.ionosphere import Ionosphere1D
 from pyionoseis.model_plot import ModelPlotMixin
+from pyionoseis.source import EarthquakeSource, _parse_event_time
 
 _log = logging.getLogger(__name__)
 
@@ -1274,6 +1276,204 @@ class Model3D(ModelPlotMixin):
             satellite_id=satellite_id,
             compute_los_tec_fn=tec_tools.compute_los_tec,
         )
+
+    def _checkpoint_artifacts(self):
+        """Collect serializable checkpoint artifacts from current model state."""
+        artifacts = {}
+        if hasattr(self, "grid") and isinstance(self.grid, xr.Dataset):
+            artifacts["grid"] = self.grid
+
+        if (
+            hasattr(self, "atmosphere")
+            and self.atmosphere is not None
+            and hasattr(self.atmosphere, "atmosphere")
+            and isinstance(self.atmosphere.atmosphere, xr.Dataset)
+        ):
+            artifacts["atmosphere"] = self.atmosphere.atmosphere
+
+        if isinstance(self.raypaths, xr.Dataset):
+            artifacts["raypaths"] = self.raypaths
+
+        if isinstance(self.ray_arrivals, xr.Dataset):
+            artifacts["ray_arrivals"] = self.ray_arrivals
+
+        if isinstance(self.continuity, xr.Dataset):
+            artifacts["continuity"] = self.continuity
+
+        return artifacts
+
+    def save_checkpoint(
+        self,
+        output_dir,
+        stage=None,
+        include_optional=True,
+        overwrite=False,
+    ):
+        """Persist current Model3D pipeline state to a checkpoint directory.
+
+        Parameters
+        ----------
+        output_dir : str or Path
+            Target checkpoint directory.
+        stage : str, optional
+            Optional explicit stage label. When omitted, inferred from available
+            artifacts (``pre_ray``, ``pre_continuity``, ``pre_tec``, ``partial``).
+        include_optional : bool, optional
+            If False, only save required artifacts for the inferred stage
+            (``grid`` and ``atmosphere`` when available).
+        overwrite : bool, optional
+            If True, allow writing to a non-empty checkpoint directory.
+
+        Returns
+        -------
+        Path
+            Checkpoint directory path.
+        """
+        checkpoint_dir = checkpoint_io.ensure_checkpoint_dir(
+            output_dir=output_dir,
+            overwrite=bool(overwrite),
+        )
+
+        artifacts = self._checkpoint_artifacts()
+        if not artifacts:
+            raise ValueError(
+                "No checkpointable artifacts found. Build model state before saving."
+            )
+
+        if not include_optional:
+            keep = {"grid", "atmosphere"}
+            artifacts = {name: ds for name, ds in artifacts.items() if name in keep}
+
+        artifact_files = {}
+        artifact_hashes = {}
+        for artifact_name, dataset in artifacts.items():
+            filename = checkpoint_io.artifact_filename(artifact_name)
+            file_path = checkpoint_dir / filename
+            checkpoint_io.write_dataset_atomic(dataset=dataset, target_path=file_path)
+            artifact_files[artifact_name] = filename
+            artifact_hashes[artifact_name] = checkpoint_io.file_sha256(file_path)
+
+        manifest = checkpoint_io.build_manifest(
+            model_metadata=checkpoint_io.model_metadata_from_model(self),
+            source_metadata=checkpoint_io.source_metadata_from_source(self.source),
+            artifact_files=artifact_files,
+            stage=stage,
+        )
+        signature_payload = checkpoint_io.build_signature_payload(
+            manifest=manifest,
+            artifact_hashes=artifact_hashes,
+        )
+        signature_hash = model_io.canonical_json_hash(signature_payload)
+        manifest["signature_hash"] = signature_hash
+
+        checkpoint_io.write_json_atomic(
+            payload=manifest,
+            target_path=checkpoint_io.checkpoint_manifest_path(checkpoint_dir),
+        )
+        checkpoint_io.write_json_atomic(
+            payload={
+                "signature_hash": signature_hash,
+                "signature": signature_payload,
+            },
+            target_path=checkpoint_io.checkpoint_signature_path(checkpoint_dir),
+        )
+
+        return checkpoint_dir
+
+    def load_checkpoint(
+        self,
+        output_dir,
+        validate_signature=True,
+        allow_migration=True,
+    ):
+        """Load Model3D pipeline state from a checkpoint directory.
+
+        Parameters
+        ----------
+        output_dir : str or Path
+            Existing checkpoint directory.
+        validate_signature : bool, optional
+            If True, validate artifact integrity via signature sidecar.
+        allow_migration : bool, optional
+            If True, allow schema migration attempts for unsupported versions.
+
+        Returns
+        -------
+        dict
+            Loaded checkpoint manifest.
+        """
+        checkpoint_dir = Path(output_dir)
+        manifest = checkpoint_io.load_manifest(checkpoint_dir)
+        checkpoint_io.validate_schema_version(
+            schema_version=int(manifest.get("schema_version", -1)),
+            allow_migration=bool(allow_migration),
+        )
+
+        if validate_signature:
+            checkpoint_io.validate_signature(checkpoint_dir, manifest)
+
+        model_meta = manifest.get("model", {})
+        self.name = str(model_meta.get("name", self.name))
+        self.radius = float(model_meta.get("radius_km", self.radius))
+        self.height = float(model_meta.get("height_km", self.height))
+        self.winds = bool(model_meta.get("winds", self.winds))
+        self.grid_spacing = float(model_meta.get("grid_spacing_deg", self.grid_spacing))
+        self.height_spacing = float(
+            model_meta.get("height_spacing_km", self.height_spacing)
+        )
+        self.atmosphere_model = str(
+            model_meta.get("atmosphere_model", self.atmosphere_model)
+        )
+        self.ionosphere_model = str(
+            model_meta.get("ionosphere_model", self.ionosphere_model)
+        )
+
+        source_meta = manifest.get("source")
+        if isinstance(source_meta, dict):
+            restored_source = EarthquakeSource()
+            restored_source.latitude = float(source_meta["latitude_deg"])
+            restored_source.longitude = float(source_meta["longitude_deg"])
+            restored_source.depth = float(source_meta.get("depth_km", 0.0))
+            restored_source.time = _parse_event_time(source_meta["time_utc"])
+            self.source = restored_source
+
+        artifacts = checkpoint_io.list_expected_artifact_paths(
+            checkpoint_dir=checkpoint_dir,
+            artifacts=manifest.get("artifacts", {}),
+        )
+        checkpoint_io.validate_artifact_presence(artifacts)
+
+        if "grid" in artifacts:
+            self.grid = xr.load_dataset(artifacts["grid"])
+            if self.grid.sizes.get("latitude", 0) > 0:
+                lat_vals = self.grid.coords["latitude"].values
+                self.lat_extent = (float(lat_vals[0]), float(lat_vals[-1]))
+            if self.grid.sizes.get("longitude", 0) > 0:
+                lon_vals = self.grid.coords["longitude"].values
+                self.lon_extent = (float(lon_vals[0]), float(lon_vals[-1]))
+
+        if "atmosphere" in artifacts:
+            atmosphere_ds = xr.load_dataset(artifacts["atmosphere"])
+            self.atmosphere = checkpoint_io.LoadedAtmosphereProfile(atmosphere=atmosphere_ds)
+
+        self.raypaths = xr.load_dataset(artifacts["raypaths"]) if "raypaths" in artifacts else None
+        self.ray_arrivals = (
+            xr.load_dataset(artifacts["ray_arrivals"])
+            if "ray_arrivals" in artifacts
+            else None
+        )
+        self.continuity = (
+            xr.load_dataset(artifacts["continuity"])
+            if "continuity" in artifacts
+            else None
+        )
+
+        if "raypaths" in artifacts:
+            self.raytrace_run_dir = str(checkpoint_dir)
+        else:
+            self.raytrace_run_dir = None
+
+        return manifest
 
 
         
