@@ -43,6 +43,29 @@ _MAG_VARS = [
 ]
 
 
+def _validate_inclination_range(incl_min, incl_max, incl_step):
+    """Validate infraGA launch inclination range inputs.
+
+    Parameters
+    ----------
+    incl_min : float
+        Minimum launch inclination in degrees.
+    incl_max : float
+        Maximum launch inclination in degrees.
+    incl_step : float
+        Launch inclination increment in degrees.
+
+    Raises
+    ------
+    ValueError
+        If increment is non-positive or bounds are inverted.
+    """
+    if float(incl_step) <= 0.0:
+        raise ValueError("incl_step must be > 0 degrees.")
+    if float(incl_max) < float(incl_min):
+        raise ValueError("incl_max must be >= incl_min.")
+
+
 def _iono_profile_worker(args):
     """Compute a single ionospheric electron-density profile (thread worker)."""
     lat, lon, altitudes, time, model_name = args
@@ -160,6 +183,9 @@ class Model3D(ModelPlotMixin):
             self.tec_sat_number = None
             self.tec_sat_mapping_file = None
             self.tec_start_offset_s = 0.0
+            self.rays_incl_min = 45.0
+            self.rays_incl_max = 90.0
+            self.rays_incl_step = 1.0
 
     def load_from_toml(self, toml_file):
         data = toml.load(toml_file)
@@ -208,6 +234,16 @@ class Model3D(ModelPlotMixin):
         self.tec_sat_number = tec.get("sat_number")
         self.tec_sat_mapping_file = tec.get("sat_mapping_file")
         self.tec_start_offset_s = tec.get("start_offset_s", 0.0)
+
+        rays = data.get("rays", {})
+        self.rays_incl_min = float(rays.get("incl_min", 45.0))
+        self.rays_incl_max = float(rays.get("incl_max", 90.0))
+        self.rays_incl_step = float(rays.get("incl_step", 1.0))
+        _validate_inclination_range(
+            incl_min=self.rays_incl_min,
+            incl_max=self.rays_incl_max,
+            incl_step=self.rays_incl_step,
+        )
         
 
     def assign_source(self, source):
@@ -421,9 +457,9 @@ class Model3D(ModelPlotMixin):
         az_min=0.0,
         az_max=360.0,
         az_step=10.0,
-        incl_min=45.0,
-        incl_max=90.0,
-        incl_step=1.0,
+        incl_min=None,
+        incl_max=None,
+        incl_step=None,
         bounces=0,
         max_rng_km=5000.0,
         frequency_hz=0.005,
@@ -461,6 +497,12 @@ class Model3D(ModelPlotMixin):
         az_interp_min, az_interp_max, az_interp_step : float, optional
             Azimuth sampling used when ``az_interp=True``. Values are in
             degrees and endpoint duplicates (e.g., 0 and 360) are removed.
+        incl_min, incl_max, incl_step : float, optional
+            Launch inclination range in degrees passed to infraGA
+            ``--incl-min/--incl-max/--incl-step``. If omitted, values are
+            loaded from TOML ``[rays]`` when present, otherwise defaults are
+            ``45, 90, 1``. Convention: ``90`` is vertical upward launch,
+            smaller angles tilt toward horizontal propagation.
 
         Notes
         -----
@@ -484,6 +526,27 @@ class Model3D(ModelPlotMixin):
 
         if self.atmosphere is None:
             self.assign_atmosphere()
+
+        effective_incl_min = (
+            float(self.rays_incl_min)
+            if incl_min is None
+            else float(incl_min)
+        )
+        effective_incl_max = (
+            float(self.rays_incl_max)
+            if incl_max is None
+            else float(incl_max)
+        )
+        effective_incl_step = (
+            float(self.rays_incl_step)
+            if incl_step is None
+            else float(incl_step)
+        )
+        _validate_inclination_range(
+            incl_min=effective_incl_min,
+            incl_max=effective_incl_max,
+            incl_step=effective_incl_step,
+        )
 
         if output_dir is not None:
             run_dir = Path(output_dir)
@@ -517,7 +580,10 @@ class Model3D(ModelPlotMixin):
                         ) + 1
                         az_count = max(1, az_count)
                     incl_count = int(
-                        np.floor((float(incl_max) - float(incl_min)) / float(incl_step))
+                        np.floor(
+                            (effective_incl_max - effective_incl_min)
+                            / effective_incl_step
+                        )
                     ) + 1
                     incl_count = max(1, incl_count)
                     launch_count = az_count * incl_count
@@ -538,9 +604,9 @@ class Model3D(ModelPlotMixin):
             "az_min": float(az_min),
             "az_max": float(az_max),
             "az_step": float(az_step),
-            "incl_min": float(incl_min),
-            "incl_max": float(incl_max),
-            "incl_step": float(incl_step),
+            "incl_min": float(effective_incl_min),
+            "incl_max": float(effective_incl_max),
+            "incl_step": float(effective_incl_step),
             "bounces": int(bounces),
             "max_rng_km": float(max_rng_km),
             "frequency_hz": float(frequency_hz),
@@ -584,9 +650,9 @@ class Model3D(ModelPlotMixin):
             az_min=float(az_min),
             az_max=float(az_max),
             az_step=float(az_step),
-            incl_min=float(incl_min),
-            incl_max=float(incl_max),
-            incl_step=float(incl_step),
+            incl_min=float(effective_incl_min),
+            incl_max=float(effective_incl_max),
+            incl_step=float(effective_incl_step),
             bounces=int(bounces),
             max_rng_km=float(max_rng_km),
             frequency_hz=float(frequency_hz),

@@ -77,6 +77,32 @@ class TestInfraGATools(unittest.TestCase):
 
 class TestModelTraceRays(unittest.TestCase):
     @staticmethod
+    def _write_temp_event_toml_with_rays(incl_min, incl_max, incl_step):
+        """Write a temporary event TOML with a [rays] section."""
+        content = f"""
+[event]
+time = "2011-10-23T10:21:22Z"
+latitude = 38.7294
+longitude = 43.4465
+depth = 7.6
+
+[model]
+name = "TEST"
+radius = 100.0
+height = 500.0
+grid_spacing = 1.0
+height_spacing = 20.0
+
+[rays]
+incl_min = {float(incl_min)}
+incl_max = {float(incl_max)}
+incl_step = {float(incl_step)}
+""".strip()
+        with tempfile.NamedTemporaryFile("w", suffix=".toml", delete=False) as fh:
+            fh.write(content)
+            return fh.name
+
+    @staticmethod
     def _mock_run_sph_trace(command):
         output_idx = command.index("--output-id") + 1
         output_prefix = command[output_idx]
@@ -113,6 +139,58 @@ class TestModelTraceRays(unittest.TestCase):
         self.assertEqual(ray_ds.attrs["raytrace_backend"], "infraga_sph")
         self.assertIn("sph prop", ray_ds.attrs["infraga_command"])
         self.assertIn("--az-min", ray_ds.attrs["infraga_command"])
+
+    @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
+    @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])
+    def test_trace_rays_uses_toml_rays_inclination_defaults(self, _resolve_cmd, _run_trace):
+        toml_path = self._write_temp_event_toml_with_rays(50.0, 80.0, 2.5)
+        try:
+            model = Model3D(toml_file=toml_path)
+            source = EarthquakeSource()
+            model.assign_source(source)
+            model.make_3Dgrid()
+            model.atmosphere = cast(Any, _FakeAtmosphere(model.grid.coords["altitude"].values))
+
+            ray_ds = model.trace_rays(type="3d", keep_files=False)
+
+            self.assertIn("--incl-min 50.0", ray_ds.attrs["infraga_command"])
+            self.assertIn("--incl-max 80.0", ray_ds.attrs["infraga_command"])
+            self.assertIn("--incl-step 2.5", ray_ds.attrs["infraga_command"])
+        finally:
+            Path(toml_path).unlink(missing_ok=True)
+
+    @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
+    @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])
+    def test_trace_rays_explicit_inclination_overrides_toml(self, _resolve_cmd, _run_trace):
+        toml_path = self._write_temp_event_toml_with_rays(50.0, 80.0, 2.5)
+        try:
+            model = Model3D(toml_file=toml_path)
+            source = EarthquakeSource()
+            model.assign_source(source)
+            model.make_3Dgrid()
+            model.atmosphere = cast(Any, _FakeAtmosphere(model.grid.coords["altitude"].values))
+
+            ray_ds = model.trace_rays(
+                type="3d",
+                keep_files=False,
+                incl_min=60.0,
+                incl_max=70.0,
+                incl_step=5.0,
+            )
+
+            self.assertIn("--incl-min 60.0", ray_ds.attrs["infraga_command"])
+            self.assertIn("--incl-max 70.0", ray_ds.attrs["infraga_command"])
+            self.assertIn("--incl-step 5.0", ray_ds.attrs["infraga_command"])
+        finally:
+            Path(toml_path).unlink(missing_ok=True)
+
+    def test_load_from_toml_rays_invalid_inclination_step_raises(self):
+        toml_path = self._write_temp_event_toml_with_rays(50.0, 80.0, 0.0)
+        try:
+            with self.assertRaisesRegex(ValueError, "incl_step"):
+                Model3D(toml_file=toml_path)
+        finally:
+            Path(toml_path).unlink(missing_ok=True)
 
     @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
     @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])

@@ -60,7 +60,7 @@ logging.getLogger("pyionoseis").setLevel(logging.WARNING)
 
 Example output when `INFO` is enabled:
 
-```
+```text
 INFO:pyionoseis.model:Computing ionospheric electron density (iri2020): 121 profiles (11 lat × 11 lon × 25 alt)
 INFO:pyionoseis.model:Ionospheric computation completed.
 ```
@@ -145,6 +145,21 @@ See the full mathematical description in [Line-of-Sight TEC](tec.md).
 The `infraga-sph` binary must be compiled and placed in the package `bin/`
 path — see `README.md` for the build-and-copy workflow.
 
+Set launch inclination defaults in TOML under `[rays]`:
+
+```toml
+[rays]
+incl_min = 45.0
+incl_max = 90.0
+incl_step = 1.0
+```
+
+Use this physical convention for takeoff angle:
+
+- `90°` is vertical upward launch.
+- Smaller angles tilt toward horizontal propagation.
+- `incl_min` and `incl_max` are inclusive bounds used with `incl_step`.
+
 ```python
 # Spherical azimuth sweep (3-D)
 raypaths = model.trace_rays(type="3d")
@@ -161,11 +176,9 @@ raypaths = model.trace_rays(
 
 Raw outputs are stored on the model object:
 
-| Attribute | Contents |
-|-----------|----------|
-| `model.raypaths` | `xr.Dataset` — ray geometry and timing |
-| `model.ray_arrivals` | `xr.Dataset` — ground-level arrival metadata |
-| `model.raytrace_run_dir` | Path to the directory holding infraGA output files |
+- `model.raypaths` — `xr.Dataset` with ray geometry and timing.
+- `model.ray_arrivals` — `xr.Dataset` with ground-level arrival metadata.
+- `model.raytrace_run_dir` — path to the directory holding infraGA output files.
 
 Key variables in `model.raypaths`:
 
@@ -198,4 +211,6 @@ model.load_rays(
     validate_signature=True,  # checks hash against current source/atmosphere
 )
 ```
+
+Use `validate_signature=True` when you want strict source/atmosphere consistency checks.
 
