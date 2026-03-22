@@ -204,6 +204,20 @@ class TestModelTraceRays(unittest.TestCase):
             self.assertIn("ray_lat_deg", second.data_vars)
             self.assertEqual(mock_run_trace.call_count, 1)
             self.assertTrue(second.attrs["raytrace_loaded_from_cache"])
+            self.assertEqual(first.attrs["raytrace_backend"], "infraga_sph")
+            self.assertEqual(second.attrs["raytrace_backend"], "infraga_sph")
+            self.assertEqual(first.attrs["raytrace_type"], "3d")
+            self.assertEqual(second.attrs["raytrace_type"], "3d")
+            self.assertIn("raytrace_signature_hash", first.attrs)
+            self.assertIn("raytrace_signature_hash", second.attrs)
+            self.assertEqual(
+                first.attrs["raytrace_signature_hash"],
+                second.attrs["raytrace_signature_hash"],
+            )
+            self.assertIn("raytrace_signature_file", first.attrs)
+            self.assertIn("raytrace_signature_file", second.attrs)
+            self.assertTrue(first.attrs["raytrace_signature_file"].endswith(".signature.json"))
+            self.assertTrue(second.attrs["raytrace_signature_file"].endswith(".signature.json"))
 
     @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
     @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])
@@ -231,7 +245,7 @@ class TestModelTraceRays(unittest.TestCase):
             model.atmosphere = cast(Any, _FakeAtmosphere(model.grid.coords["altitude"].values))
 
             model.trace_rays(type="3d", output_dir=tmpdir, reuse_existing=True)
-            model.trace_rays(
+            ray_ds = model.trace_rays(
                 type="3d",
                 output_dir=tmpdir,
                 reuse_existing=True,
@@ -239,6 +253,43 @@ class TestModelTraceRays(unittest.TestCase):
             )
 
             self.assertEqual(mock_run_trace.call_count, 2)
+            self.assertFalse(ray_ds.attrs["raytrace_loaded_from_cache"])
+            self.assertEqual(ray_ds.attrs["raytrace_backend"], "infraga_sph")
+            self.assertEqual(ray_ds.attrs["raytrace_type"], "3d")
+            self.assertIn("raytrace_signature_hash", ray_ds.attrs)
+
+    @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
+    @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])
+    def test_trace_rays_az_interp_sets_projection_attrs_and_deduplicates_wraparound(
+        self,
+        _resolve_cmd,
+        _run_trace,
+    ):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model = Model3D()
+            source = EarthquakeSource()
+            model.assign_source(source)
+            model.make_3Dgrid()
+            model.atmosphere = cast(Any, _FakeAtmosphere(model.grid.coords["altitude"].values))
+
+            ray_ds = model.trace_rays(
+                type="2d",
+                output_dir=tmpdir,
+                reuse_existing=True,
+                az_interp=True,
+                az_interp_min=0.0,
+                az_interp_max=360.0,
+                az_interp_step=120.0,
+            )
+
+            self.assertTrue(ray_ds.attrs["synthetic_3d_from_2d"])
+            self.assertEqual(ray_ds.attrs["synthetic_3d_az_min_deg"], 0.0)
+            self.assertEqual(ray_ds.attrs["synthetic_3d_az_max_deg"], 360.0)
+            self.assertEqual(ray_ds.attrs["synthetic_3d_az_step_deg"], 120.0)
+            self.assertEqual(ray_ds.attrs["synthetic_3d_az_count"], 3)
+            self.assertEqual(ray_ds.sizes["ray_point"], 6)
+            unique_az = np.unique(np.round(ray_ds["ray_azimuth_deg"].values, 6))
+            np.testing.assert_allclose(unique_az, np.array([0.0, 120.0, 240.0]))
 
     @patch("pyionoseis.model.infraga_tools.run_sph_trace", side_effect=_mock_run_sph_trace.__func__)
     @patch("pyionoseis.model.infraga_tools.resolve_infraga_command", return_value=["infraga"])

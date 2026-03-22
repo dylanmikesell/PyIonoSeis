@@ -18,6 +18,7 @@ import xarray as xr
 from pyionoseis import infraga as infraga_tools
 from pyionoseis import continuity as continuity_tools
 from pyionoseis import model_io
+from pyionoseis import ray_tracing_orchestrator
 from pyionoseis import tec as tec_tools
 from pyionoseis import tec_io
 from pyionoseis import wavevector as wavevector_tools
@@ -215,17 +216,14 @@ class Model3D(ModelPlotMixin):
                                   self.atmosphere_model)
 
     def _build_ray_signature_payload(self, run_type, ray_params, profile):
-        return {
-            "signature_version": 1,
-            "run_type": str(run_type),
-            "source": {
-                "latitude_deg": float(self.source.get_latitude()),
-                "longitude_deg": float(self.source.get_longitude()),
-                "time": str(self.source.get_time()),
-            },
-            "ray_params": ray_params,
-            "profile": profile,
-        }
+        return ray_tracing_orchestrator.build_ray_signature_payload(
+            source_lat_deg=float(self.source.get_latitude()),
+            source_lon_deg=float(self.source.get_longitude()),
+            source_time=str(self.source.get_time()),
+            run_type=run_type,
+            ray_params=ray_params,
+            profile=profile,
+        )
 
     def _apply_raypaths_metadata(
         self,
@@ -236,131 +234,59 @@ class Model3D(ModelPlotMixin):
         command,
         signature_hash=None,
     ):
-        raypaths.attrs["raytrace_backend"] = "infraga_sph"
-        raypaths.attrs["raytrace_type"] = type
-        raypaths.attrs["raytrace_accel_requested"] = bool(use_accel)
-        raypaths.attrs["raytrace_accel_used"] = bool(accel_used)
-        raypaths.attrs["source_latitude_deg"] = float(self.source.get_latitude())
-        raypaths.attrs["source_longitude_deg"] = float(self.source.get_longitude())
-        raypaths.attrs["source_time"] = str(self.source.get_time())
-        raypaths.attrs["prof_format"] = "zcuvd"
-        raypaths.attrs["winds_assumed_zero"] = True
-        raypaths.attrs["infraga_command"] = " ".join(command)
-        if signature_hash is not None:
-            raypaths.attrs["raytrace_signature_hash"] = signature_hash
+        ray_tracing_orchestrator.apply_raypaths_metadata(
+            raypaths=raypaths,
+            run_type=type,
+            use_accel=use_accel,
+            accel_used=accel_used,
+            command=command,
+            source_lat_deg=float(self.source.get_latitude()),
+            source_lon_deg=float(self.source.get_longitude()),
+            source_time=str(self.source.get_time()),
+            signature_hash=signature_hash,
+        )
 
     @staticmethod
     def _azimuth_sequence(az_min, az_max, az_step):
         """Build normalized azimuth sequence in degrees."""
-        if float(az_step) <= 0.0:
-            raise ValueError("az_interp_step must be > 0.")
-        if float(az_max) < float(az_min):
-            raise ValueError("az_interp_max must be >= az_interp_min.")
-
-        az_values = np.arange(float(az_min), float(az_max) + 0.5 * float(az_step), float(az_step))
-        az_values = np.mod(az_values, 360.0)
-        # Avoid duplicate endpoint (e.g., 0 and 360).
-        _, unique_idx = np.unique(np.round(az_values, 12), return_index=True)
-        unique_idx = np.sort(unique_idx)
-        return az_values[unique_idx]
+        return ray_tracing_orchestrator.azimuth_sequence(
+            az_min=az_min,
+            az_max=az_max,
+            az_step=az_step,
+        )
 
     @staticmethod
     def _forward_geodesic_deg(src_lat_deg, src_lon_deg, angular_distance_rad, azimuth_deg):
         """Project points from source by angular distance and azimuth on a sphere."""
-        lat1 = np.deg2rad(float(src_lat_deg))
-        lon1 = np.deg2rad(float(src_lon_deg))
-        az = np.deg2rad(float(azimuth_deg))
-        delta = np.asarray(angular_distance_rad, dtype=np.float64)
-
-        sin_lat1 = np.sin(lat1)
-        cos_lat1 = np.cos(lat1)
-        sin_delta = np.sin(delta)
-        cos_delta = np.cos(delta)
-
-        lat2 = np.arcsin(
-            np.clip(sin_lat1 * cos_delta + cos_lat1 * sin_delta * np.cos(az), -1.0, 1.0)
+        return ray_tracing_orchestrator.forward_geodesic_deg(
+            src_lat_deg=src_lat_deg,
+            src_lon_deg=src_lon_deg,
+            angular_distance_rad=angular_distance_rad,
+            azimuth_deg=azimuth_deg,
         )
-        lon2 = lon1 + np.arctan2(
-            np.sin(az) * sin_delta * cos_lat1,
-            cos_delta - sin_lat1 * np.sin(lat2),
-        )
-
-        lat2_deg = np.rad2deg(lat2)
-        lon2_deg = ((np.rad2deg(lon2) + 180.0) % 360.0) - 180.0
-        return lat2_deg, lon2_deg
 
     @staticmethod
     def _great_circle_angular_distance_rad(src_lat_deg, src_lon_deg, dst_lat_deg, dst_lon_deg):
         """Great-circle angular distance between source and destination points."""
-        lat1 = np.deg2rad(float(src_lat_deg))
-        lon1 = np.deg2rad(float(src_lon_deg))
-        lat2 = np.deg2rad(np.asarray(dst_lat_deg, dtype=np.float64))
-        lon2 = np.deg2rad(np.asarray(dst_lon_deg, dtype=np.float64))
-        dlat = lat2 - lat1
-        dlon = lon2 - lon1
-        a = (
-            np.sin(dlat / 2.0) ** 2
-            + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2.0) ** 2
+        return ray_tracing_orchestrator.great_circle_angular_distance_rad(
+            src_lat_deg=src_lat_deg,
+            src_lon_deg=src_lon_deg,
+            dst_lat_deg=dst_lat_deg,
+            dst_lon_deg=dst_lon_deg,
         )
-        return 2.0 * np.arctan2(np.sqrt(np.clip(a, 0.0, 1.0)), np.sqrt(np.clip(1.0 - a, 0.0, 1.0)))
 
     def _project_2d_raypaths_to_azimuths(self, raypaths, az_min, az_max, az_step):
         """Expand 2D raypaths into synthetic 3D by azimuthal projection."""
-        az_values = self._azimuth_sequence(az_min=az_min, az_max=az_max, az_step=az_step)
-        if az_values.size <= 1:
-            return raypaths
-
         src_lat = float(self.source.get_latitude())
         src_lon = float(self.source.get_longitude())
-        lat_orig = raypaths["ray_lat_deg"].values
-        lon_orig = raypaths["ray_lon_deg"].values
-        angular_distance = self._great_circle_angular_distance_rad(
+        return ray_tracing_orchestrator.project_2d_raypaths_to_azimuths(
+            raypaths=raypaths,
             src_lat_deg=src_lat,
             src_lon_deg=src_lon,
-            dst_lat_deg=lat_orig,
-            dst_lon_deg=lon_orig,
+            az_min=az_min,
+            az_max=az_max,
+            az_step=az_step,
         )
-
-        n_points = lat_orig.size
-        az_count = az_values.size
-        expanded = {}
-        for name in raypaths.data_vars:
-            expanded[name] = np.tile(raypaths[name].values, az_count)
-
-        expanded_lat = np.empty(n_points * az_count, dtype=np.float64)
-        expanded_lon = np.empty(n_points * az_count, dtype=np.float64)
-        expanded_az = np.empty(n_points * az_count, dtype=np.float64)
-
-        for idx, azimuth in enumerate(az_values):
-            start = idx * n_points
-            end = start + n_points
-            lat_new, lon_new = self._forward_geodesic_deg(
-                src_lat_deg=src_lat,
-                src_lon_deg=src_lon,
-                angular_distance_rad=angular_distance,
-                azimuth_deg=float(azimuth),
-            )
-            expanded_lat[start:end] = lat_new
-            expanded_lon[start:end] = lon_new
-            expanded_az[start:end] = azimuth
-
-        expanded["ray_lat_deg"] = expanded_lat
-        expanded["ray_lon_deg"] = expanded_lon
-        expanded["ray_azimuth_deg"] = expanded_az
-
-        projected = xr.Dataset(
-            {name: (["ray_point"], values) for name, values in expanded.items()},
-            attrs=dict(raypaths.attrs),
-        )
-        projected.attrs["synthetic_3d_from_2d"] = True
-        projected.attrs["synthetic_3d_az_min_deg"] = float(az_min)
-        projected.attrs["synthetic_3d_az_max_deg"] = float(az_max)
-        projected.attrs["synthetic_3d_az_step_deg"] = float(az_step)
-        projected.attrs["synthetic_3d_az_count"] = int(az_count)
-        projected.attrs["synthetic_3d_note"] = (
-            "Projected from single-azimuth 2D rays assuming axisymmetry."
-        )
-        return projected
 
     def load_rays(
         self,
@@ -462,20 +388,7 @@ class Model3D(ModelPlotMixin):
 
     def _warn_az_interp_approximation(self):
         """Emit runtime warnings when az_interp synthetic-3D remapping is active."""
-        warnings.warn(
-            "az_interp=True remaps a single-azimuth 2D ray solution into synthetic 3D. "
-            "This assumes an axisymmetric medium around the source. In non-axisymmetric "
-            "atmosphere/wind fields, remapped travel times and amplitudes are not physically valid.",
-            RuntimeWarning,
-            stacklevel=3,
-        )
-        warnings.warn(
-            "Ray tracing currently writes zero winds into infraGA profile (u=v=0). "
-            "If your model includes winds or azimuth-dependent structure, synthetic 3D remapping "
-            "is an approximation intended for visualization/sensitivity only.",
-            RuntimeWarning,
-            stacklevel=3,
-        )
+        ray_tracing_orchestrator.warn_az_interp_approximation()
 
     def trace_rays(
         self,
@@ -676,10 +589,10 @@ class Model3D(ModelPlotMixin):
             and raypaths_file.exists()
             and signature_file.exists()
         ):
-            with signature_file.open("r", encoding="utf-8") as fh:
-                saved_signature_raw = json.load(fh)
-            saved_signature_payload = model_io.normalize_signature_payload(saved_signature_raw)
-            if saved_signature_payload == signature_payload:
+            if ray_tracing_orchestrator.signature_payload_matches(
+                signature_file=signature_file,
+                signature_payload=signature_payload,
+            ):
                 self.load_rays(raypaths_file=raypaths_file, arrivals_file=arrivals_file, type=type)
                 self._apply_raypaths_metadata(
                     self.raypaths,
