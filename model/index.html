@@ -4631,9 +4631,7 @@ logging.basicConfig(level=logging.INFO)
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>pyionoseis/model.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  54</span>
-<span class="normal">  55</span>
-<span class="normal">  56</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  56</span>
 <span class="normal">  57</span>
 <span class="normal">  58</span>
 <span class="normal">  59</span>
@@ -6119,41 +6117,7 @@ logging.basicConfig(level=logging.INFO)
 <span class="normal">1539</span>
 <span class="normal">1540</span>
 <span class="normal">1541</span>
-<span class="normal">1542</span>
-<span class="normal">1543</span>
-<span class="normal">1544</span>
-<span class="normal">1545</span>
-<span class="normal">1546</span>
-<span class="normal">1547</span>
-<span class="normal">1548</span>
-<span class="normal">1549</span>
-<span class="normal">1550</span>
-<span class="normal">1551</span>
-<span class="normal">1552</span>
-<span class="normal">1553</span>
-<span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
-<span class="normal">1557</span>
-<span class="normal">1558</span>
-<span class="normal">1559</span>
-<span class="normal">1560</span>
-<span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
-<span class="normal">1565</span>
-<span class="normal">1566</span>
-<span class="normal">1567</span>
-<span class="normal">1568</span>
-<span class="normal">1569</span>
-<span class="normal">1570</span>
-<span class="normal">1571</span>
-<span class="normal">1572</span>
-<span class="normal">1573</span>
-<span class="normal">1574</span>
-<span class="normal">1575</span>
-<span class="normal">1576</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Model3D</span><span class="p">(</span><span class="n">ModelPlotMixin</span><span class="p">):</span>
+<span class="normal">1542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Model3D</span><span class="p">(</span><span class="n">ModelPlotMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Central orchestrator for 3-D ionospheric CID modelling.</span>
 
 <span class="sd">    ``Model3D`` assembles a geographic 3-D grid and populates it with outputs</span>
@@ -7302,106 +7266,69 @@ logging.basicConfig(level=logging.INFO)
                 <span class="n">ipp_altitude_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_ipp_altitude_km</span><span class="p">),</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">receiver_positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">receiver_format</span> <span class="o">=</span> <span class="n">receiver_format</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_format</span>
-            <span class="n">receiver_csv</span> <span class="o">=</span> <span class="n">receiver_csv</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_csv</span>
-            <span class="n">receiver_listesta</span> <span class="o">=</span> <span class="n">receiver_listesta</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_listesta</span>
-            <span class="n">receiver_code</span> <span class="o">=</span> <span class="n">receiver_code</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_code</span>
-            <span class="k">if</span> <span class="n">receiver_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">receiver_format</span> <span class="o">=</span> <span class="s2">&quot;csv&quot;</span> <span class="k">if</span> <span class="n">receiver_csv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;listesta&quot;</span>
+        <span class="n">receiver_positions</span> <span class="o">=</span> <span class="n">tec_input_resolver</span><span class="o">.</span><span class="n">resolve_receiver_positions</span><span class="p">(</span>
+            <span class="n">receiver_positions</span><span class="o">=</span><span class="n">receiver_positions</span><span class="p">,</span>
+            <span class="n">receiver_format</span><span class="o">=</span><span class="n">receiver_format</span><span class="p">,</span>
+            <span class="n">receiver_csv</span><span class="o">=</span><span class="n">receiver_csv</span><span class="p">,</span>
+            <span class="n">receiver_listesta</span><span class="o">=</span><span class="n">receiver_listesta</span><span class="p">,</span>
+            <span class="n">receiver_code</span><span class="o">=</span><span class="n">receiver_code</span><span class="p">,</span>
+            <span class="n">default_receiver_format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_format</span><span class="p">,</span>
+            <span class="n">default_receiver_csv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_csv</span><span class="p">,</span>
+            <span class="n">default_receiver_listesta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_listesta</span><span class="p">,</span>
+            <span class="n">default_receiver_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_code</span><span class="p">,</span>
+            <span class="n">load_receiver_positions_csv</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_csv</span><span class="p">,</span>
+            <span class="n">load_receiver_positions_listesta</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_listesta</span><span class="p">,</span>
+        <span class="p">)</span>
 
-            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">receiver_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">receiver_csv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;receiver_csv must be provided when receiver_format=&#39;csv&#39;.&quot;</span>
-                    <span class="p">)</span>
-                <span class="n">receiver_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_csv</span><span class="p">(</span>
-                    <span class="n">receiver_csv</span><span class="p">,</span>
-                    <span class="n">receiver_code</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">receiver_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;listesta&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">receiver_listesta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;receiver_listesta must be provided when receiver_format=&#39;listesta&#39;.&quot;</span>
-                    <span class="p">)</span>
-                <span class="n">receiver_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_listesta</span><span class="p">(</span>
-                    <span class="n">receiver_listesta</span><span class="p">,</span>
-                    <span class="n">receiver_code</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;receiver_format must be one of: &#39;csv&#39;, &#39;listesta&#39;.&quot;</span>
-                <span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">satellite_positions</span><span class="p">,</span>
+            <span class="n">sat_id</span><span class="p">,</span>
+            <span class="n">constellation</span><span class="p">,</span>
+            <span class="n">prn</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">tec_input_resolver</span><span class="o">.</span><span class="n">resolve_satellite_positions</span><span class="p">(</span>
+            <span class="n">satellite_positions</span><span class="o">=</span><span class="n">satellite_positions</span><span class="p">,</span>
+            <span class="n">orbit_format</span><span class="o">=</span><span class="n">orbit_format</span><span class="p">,</span>
+            <span class="n">orbit_h5</span><span class="o">=</span><span class="n">orbit_h5</span><span class="p">,</span>
+            <span class="n">orbit_pos</span><span class="o">=</span><span class="n">orbit_pos</span><span class="p">,</span>
+            <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
+            <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
+            <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
+            <span class="n">sat_number</span><span class="o">=</span><span class="n">sat_number</span><span class="p">,</span>
+            <span class="n">satpos_root</span><span class="o">=</span><span class="n">satpos_root</span><span class="p">,</span>
+            <span class="n">satpos_date</span><span class="o">=</span><span class="n">satpos_date</span><span class="p">,</span>
+            <span class="n">sat_mapping_file</span><span class="o">=</span><span class="n">sat_mapping_file</span><span class="p">,</span>
+            <span class="n">start_offset_s</span><span class="o">=</span><span class="n">start_offset_s</span><span class="p">,</span>
+            <span class="n">default_orbit_format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_format</span><span class="p">,</span>
+            <span class="n">default_orbit_h5</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_h5</span><span class="p">,</span>
+            <span class="n">default_orbit_pos</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_pos</span><span class="p">,</span>
+            <span class="n">default_sat_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_id</span><span class="p">,</span>
+            <span class="n">default_constellation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_constellation</span><span class="p">,</span>
+            <span class="n">default_prn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_prn</span><span class="p">,</span>
+            <span class="n">default_sat_number</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_number</span><span class="p">,</span>
+            <span class="n">default_satpos_root</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_root</span><span class="p">,</span>
+            <span class="n">default_satpos_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_date</span><span class="p">,</span>
+            <span class="n">default_sat_mapping_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_mapping_file</span><span class="p">,</span>
+            <span class="n">default_start_offset_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_start_offset_s</span><span class="p">,</span>
+            <span class="n">event_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
+            <span class="n">output_dt_s</span><span class="o">=</span><span class="n">tec_config</span><span class="o">.</span><span class="n">output_dt_s</span><span class="p">,</span>
+            <span class="n">load_orbits_hdf5</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_hdf5</span><span class="p">,</span>
+            <span class="n">build_satpos_file_path</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">build_satpos_file_path</span><span class="p">,</span>
+            <span class="n">load_orbits_pos</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_pos</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">satellite_positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">orbit_format</span> <span class="o">=</span> <span class="n">orbit_format</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_format</span>
-            <span class="n">orbit_h5</span> <span class="o">=</span> <span class="n">orbit_h5</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_h5</span>
-            <span class="n">orbit_pos</span> <span class="o">=</span> <span class="n">orbit_pos</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_pos</span>
-            <span class="n">sat_id</span> <span class="o">=</span> <span class="n">sat_id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_id</span>
-            <span class="n">constellation</span> <span class="o">=</span> <span class="n">constellation</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_constellation</span>
-            <span class="n">prn</span> <span class="o">=</span> <span class="n">prn</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_prn</span>
-            <span class="n">sat_number</span> <span class="o">=</span> <span class="n">sat_number</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_number</span>
-            <span class="n">satpos_root</span> <span class="o">=</span> <span class="n">satpos_root</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_root</span>
-            <span class="n">satpos_date</span> <span class="o">=</span> <span class="n">satpos_date</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_date</span>
-            <span class="n">sat_mapping_file</span> <span class="o">=</span> <span class="n">sat_mapping_file</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_mapping_file</span>
-            <span class="n">start_offset_s</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">tec_start_offset_s</span>
-                <span class="k">if</span> <span class="n">start_offset_s</span> <span class="ow">is</span> <span class="kc">None</span>
-                <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">start_offset_s</span><span class="p">)</span>
-            <span class="p">)</span>
+        <span class="n">dNe</span> <span class="o">=</span> <span class="n">tec_orchestrator</span><span class="o">.</span><span class="n">resolve_density_perturbation</span><span class="p">(</span>
+            <span class="n">dNe</span><span class="o">=</span><span class="n">dNe</span><span class="p">,</span>
+            <span class="n">continuity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="p">,</span>
+        <span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">orbit_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">orbit_format</span> <span class="o">=</span> <span class="s2">&quot;h5&quot;</span> <span class="k">if</span> <span class="n">orbit_h5</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;pos&quot;</span>
+        <span class="n">receiver_id</span><span class="p">,</span> <span class="n">satellite_id</span> <span class="o">=</span> <span class="n">tec_orchestrator</span><span class="o">.</span><span class="n">build_los_ids</span><span class="p">(</span>
+            <span class="n">receiver_positions</span><span class="o">=</span><span class="n">receiver_positions</span><span class="p">,</span>
+            <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
+            <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
+            <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
+        <span class="p">)</span>
 
-            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">orbit_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;h5&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">orbit_h5</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;orbit_h5 must be provided when orbit_format=&#39;h5&#39;.&quot;</span>
-                    <span class="p">)</span>
-                <span class="n">satellite_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_hdf5</span><span class="p">(</span>
-                    <span class="n">orbit_h5</span><span class="p">,</span>
-                    <span class="n">event_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
-                    <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
-                    <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
-                    <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
-                    <span class="n">output_dt_s</span><span class="o">=</span><span class="n">tec_config</span><span class="o">.</span><span class="n">output_dt_s</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">orbit_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">orbit_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">satpos_root</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">satpos_date</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">sat_number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                            <span class="s2">&quot;orbit_pos or (satpos_root, satpos_date, sat_number) &quot;</span>
-                            <span class="s2">&quot;must be provided when orbit_format=&#39;pos&#39;.&quot;</span>
-                        <span class="p">)</span>
-                    <span class="n">orbit_pos</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">build_satpos_file_path</span><span class="p">(</span>
-                        <span class="n">satpos_root</span><span class="p">,</span>
-                        <span class="nb">str</span><span class="p">(</span><span class="n">satpos_date</span><span class="p">),</span>
-                        <span class="nb">int</span><span class="p">(</span><span class="n">sat_number</span><span class="p">),</span>
-                    <span class="p">)</span>
-
-                <span class="n">satellite_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_pos</span><span class="p">(</span>
-                    <span class="n">orbit_pos</span><span class="p">,</span>
-                    <span class="n">event_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
-                    <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
-                    <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
-                    <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
-                    <span class="n">sat_number</span><span class="o">=</span><span class="n">sat_number</span><span class="p">,</span>
-                    <span class="n">sat_mapping_file</span><span class="o">=</span><span class="n">sat_mapping_file</span><span class="p">,</span>
-                    <span class="n">start_offset_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">start_offset_s</span><span class="p">),</span>
-                    <span class="n">output_dt_s</span><span class="o">=</span><span class="n">tec_config</span><span class="o">.</span><span class="n">output_dt_s</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;orbit_format must be one of: &#39;h5&#39;, &#39;pos&#39;.&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">dNe</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">&quot;dNe&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="p">:</span>
-            <span class="n">dNe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="p">[</span><span class="s2">&quot;dNe&quot;</span><span class="p">]</span>
-
-        <span class="n">receiver_id</span> <span class="o">=</span> <span class="n">receiver_positions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">receiver_positions</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">satellite_id</span> <span class="o">=</span> <span class="n">sat_id</span>
-        <span class="k">if</span> <span class="n">satellite_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">constellation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">satellite_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">constellation</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">prn</span><span class="p">)</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
-
-        <span class="k">return</span> <span class="n">tec_tools</span><span class="o">.</span><span class="n">compute_los_tec</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">tec_orchestrator</span><span class="o">.</span><span class="n">compute_los_tec</span><span class="p">(</span>
             <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
             <span class="n">receiver_positions</span><span class="o">=</span><span class="n">receiver_positions</span><span class="p">,</span>
             <span class="n">satellite_positions</span><span class="o">=</span><span class="n">satellite_positions</span><span class="p">,</span>
@@ -7409,6 +7336,7 @@ logging.basicConfig(level=logging.INFO)
             <span class="n">tec_config</span><span class="o">=</span><span class="n">tec_config</span><span class="p">,</span>
             <span class="n">receiver_id</span><span class="o">=</span><span class="n">receiver_id</span><span class="p">,</span>
             <span class="n">satellite_id</span><span class="o">=</span><span class="n">satellite_id</span><span class="p">,</span>
+            <span class="n">compute_los_tec_fn</span><span class="o">=</span><span class="n">tec_tools</span><span class="o">.</span><span class="n">compute_los_tec</span><span class="p">,</span>
         <span class="p">)</span>
 
 
@@ -7748,9 +7676,7 @@ store_neutral_velocity : bool, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 935</span>
-<span class="normal"> 936</span>
-<span class="normal"> 937</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 937</span>
 <span class="normal"> 938</span>
 <span class="normal"> 939</span>
 <span class="normal"> 940</span>
@@ -7930,7 +7856,9 @@ store_neutral_velocity : bool, optional
 <span class="normal">1114</span>
 <span class="normal">1115</span>
 <span class="normal">1116</span>
-<span class="normal">1117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_continuity</span><span class="p">(</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_continuity</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">t0_s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">tmax_s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -8147,9 +8075,7 @@ ValueError
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">662</span>
-<span class="normal">663</span>
-<span class="normal">664</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">664</span>
 <span class="normal">665</span>
 <span class="normal">666</span>
 <span class="normal">667</span>
@@ -8225,7 +8151,9 @@ ValueError
 <span class="normal">737</span>
 <span class="normal">738</span>
 <span class="normal">739</span>
-<span class="normal">740</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_ionosphere</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ionosphere_model</span><span class="o">=</span><span class="s2">&quot;iri2020&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">740</span>
+<span class="normal">741</span>
+<span class="normal">742</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_ionosphere</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ionosphere_model</span><span class="o">=</span><span class="s2">&quot;iri2020&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Assign ionospheric electron density to all grid points.</span>
 
 <span class="sd">    Computes IRI2020 electron density profiles in parallel across every</span>
@@ -8347,9 +8275,7 @@ Derived (nT): <code>total_field</code>, <code>horizontal_intensity</code></p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">742</span>
-<span class="normal">743</span>
-<span class="normal">744</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">744</span>
 <span class="normal">745</span>
 <span class="normal">746</span>
 <span class="normal">747</span>
@@ -8442,7 +8368,9 @@ Derived (nT): <code>total_field</code>, <code>horizontal_intensity</code></p>
 <span class="normal">834</span>
 <span class="normal">835</span>
 <span class="normal">836</span>
-<span class="normal">837</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_magnetic_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">magnetic_field_model</span><span class="o">=</span><span class="s2">&quot;igrf&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">837</span>
+<span class="normal">838</span>
+<span class="normal">839</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_magnetic_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">magnetic_field_model</span><span class="o">=</span><span class="s2">&quot;igrf&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Assign magnetic field parameters to all grid points.</span>
 
 <span class="sd">    Computes IGRF magnetic field components and derived parameters in</span>
@@ -8585,9 +8513,7 @@ keep_ray_wavevectors : bool, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">839</span>
-<span class="normal">840</span>
-<span class="normal">841</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">841</span>
 <span class="normal">842</span>
 <span class="normal">843</span>
 <span class="normal">844</span>
@@ -8679,7 +8605,9 @@ keep_ray_wavevectors : bool, optional
 <span class="normal">930</span>
 <span class="normal">931</span>
 <span class="normal">932</span>
-<span class="normal">933</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_wavevector</span><span class="p">(</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_wavevector</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
     <span class="n">mapping_mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
@@ -8840,9 +8768,7 @@ tec_config : pyionoseis.tec.TECConfig, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1119</span>
-<span class="normal">1120</span>
-<span class="normal">1121</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1121</span>
 <span class="normal">1122</span>
 <span class="normal">1123</span>
 <span class="normal">1124</span>
@@ -8997,41 +8923,7 @@ tec_config : pyionoseis.tec.TECConfig, optional
 <span class="normal">1273</span>
 <span class="normal">1274</span>
 <span class="normal">1275</span>
-<span class="normal">1276</span>
-<span class="normal">1277</span>
-<span class="normal">1278</span>
-<span class="normal">1279</span>
-<span class="normal">1280</span>
-<span class="normal">1281</span>
-<span class="normal">1282</span>
-<span class="normal">1283</span>
-<span class="normal">1284</span>
-<span class="normal">1285</span>
-<span class="normal">1286</span>
-<span class="normal">1287</span>
-<span class="normal">1288</span>
-<span class="normal">1289</span>
-<span class="normal">1290</span>
-<span class="normal">1291</span>
-<span class="normal">1292</span>
-<span class="normal">1293</span>
-<span class="normal">1294</span>
-<span class="normal">1295</span>
-<span class="normal">1296</span>
-<span class="normal">1297</span>
-<span class="normal">1298</span>
-<span class="normal">1299</span>
-<span class="normal">1300</span>
-<span class="normal">1301</span>
-<span class="normal">1302</span>
-<span class="normal">1303</span>
-<span class="normal">1304</span>
-<span class="normal">1305</span>
-<span class="normal">1306</span>
-<span class="normal">1307</span>
-<span class="normal">1308</span>
-<span class="normal">1309</span>
-<span class="normal">1310</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_los_tec</span><span class="p">(</span>
+<span class="normal">1276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_los_tec</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">receiver_positions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">satellite_positions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -9115,106 +9007,69 @@ tec_config : pyionoseis.tec.TECConfig, optional
             <span class="n">ipp_altitude_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_ipp_altitude_km</span><span class="p">),</span>
         <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">receiver_positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">receiver_format</span> <span class="o">=</span> <span class="n">receiver_format</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_format</span>
-        <span class="n">receiver_csv</span> <span class="o">=</span> <span class="n">receiver_csv</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_csv</span>
-        <span class="n">receiver_listesta</span> <span class="o">=</span> <span class="n">receiver_listesta</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_listesta</span>
-        <span class="n">receiver_code</span> <span class="o">=</span> <span class="n">receiver_code</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_code</span>
-        <span class="k">if</span> <span class="n">receiver_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">receiver_format</span> <span class="o">=</span> <span class="s2">&quot;csv&quot;</span> <span class="k">if</span> <span class="n">receiver_csv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;listesta&quot;</span>
+    <span class="n">receiver_positions</span> <span class="o">=</span> <span class="n">tec_input_resolver</span><span class="o">.</span><span class="n">resolve_receiver_positions</span><span class="p">(</span>
+        <span class="n">receiver_positions</span><span class="o">=</span><span class="n">receiver_positions</span><span class="p">,</span>
+        <span class="n">receiver_format</span><span class="o">=</span><span class="n">receiver_format</span><span class="p">,</span>
+        <span class="n">receiver_csv</span><span class="o">=</span><span class="n">receiver_csv</span><span class="p">,</span>
+        <span class="n">receiver_listesta</span><span class="o">=</span><span class="n">receiver_listesta</span><span class="p">,</span>
+        <span class="n">receiver_code</span><span class="o">=</span><span class="n">receiver_code</span><span class="p">,</span>
+        <span class="n">default_receiver_format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_format</span><span class="p">,</span>
+        <span class="n">default_receiver_csv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_csv</span><span class="p">,</span>
+        <span class="n">default_receiver_listesta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_listesta</span><span class="p">,</span>
+        <span class="n">default_receiver_code</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_receiver_code</span><span class="p">,</span>
+        <span class="n">load_receiver_positions_csv</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_csv</span><span class="p">,</span>
+        <span class="n">load_receiver_positions_listesta</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_listesta</span><span class="p">,</span>
+    <span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">receiver_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">receiver_csv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;receiver_csv must be provided when receiver_format=&#39;csv&#39;.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">receiver_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_csv</span><span class="p">(</span>
-                <span class="n">receiver_csv</span><span class="p">,</span>
-                <span class="n">receiver_code</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">receiver_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;listesta&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">receiver_listesta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;receiver_listesta must be provided when receiver_format=&#39;listesta&#39;.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">receiver_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_receiver_positions_listesta</span><span class="p">(</span>
-                <span class="n">receiver_listesta</span><span class="p">,</span>
-                <span class="n">receiver_code</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;receiver_format must be one of: &#39;csv&#39;, &#39;listesta&#39;.&quot;</span>
-            <span class="p">)</span>
+    <span class="p">(</span>
+        <span class="n">satellite_positions</span><span class="p">,</span>
+        <span class="n">sat_id</span><span class="p">,</span>
+        <span class="n">constellation</span><span class="p">,</span>
+        <span class="n">prn</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">tec_input_resolver</span><span class="o">.</span><span class="n">resolve_satellite_positions</span><span class="p">(</span>
+        <span class="n">satellite_positions</span><span class="o">=</span><span class="n">satellite_positions</span><span class="p">,</span>
+        <span class="n">orbit_format</span><span class="o">=</span><span class="n">orbit_format</span><span class="p">,</span>
+        <span class="n">orbit_h5</span><span class="o">=</span><span class="n">orbit_h5</span><span class="p">,</span>
+        <span class="n">orbit_pos</span><span class="o">=</span><span class="n">orbit_pos</span><span class="p">,</span>
+        <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
+        <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
+        <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
+        <span class="n">sat_number</span><span class="o">=</span><span class="n">sat_number</span><span class="p">,</span>
+        <span class="n">satpos_root</span><span class="o">=</span><span class="n">satpos_root</span><span class="p">,</span>
+        <span class="n">satpos_date</span><span class="o">=</span><span class="n">satpos_date</span><span class="p">,</span>
+        <span class="n">sat_mapping_file</span><span class="o">=</span><span class="n">sat_mapping_file</span><span class="p">,</span>
+        <span class="n">start_offset_s</span><span class="o">=</span><span class="n">start_offset_s</span><span class="p">,</span>
+        <span class="n">default_orbit_format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_format</span><span class="p">,</span>
+        <span class="n">default_orbit_h5</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_h5</span><span class="p">,</span>
+        <span class="n">default_orbit_pos</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_pos</span><span class="p">,</span>
+        <span class="n">default_sat_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_id</span><span class="p">,</span>
+        <span class="n">default_constellation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_constellation</span><span class="p">,</span>
+        <span class="n">default_prn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_prn</span><span class="p">,</span>
+        <span class="n">default_sat_number</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_number</span><span class="p">,</span>
+        <span class="n">default_satpos_root</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_root</span><span class="p">,</span>
+        <span class="n">default_satpos_date</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_date</span><span class="p">,</span>
+        <span class="n">default_sat_mapping_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_mapping_file</span><span class="p">,</span>
+        <span class="n">default_start_offset_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tec_start_offset_s</span><span class="p">,</span>
+        <span class="n">event_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
+        <span class="n">output_dt_s</span><span class="o">=</span><span class="n">tec_config</span><span class="o">.</span><span class="n">output_dt_s</span><span class="p">,</span>
+        <span class="n">load_orbits_hdf5</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_hdf5</span><span class="p">,</span>
+        <span class="n">build_satpos_file_path</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">build_satpos_file_path</span><span class="p">,</span>
+        <span class="n">load_orbits_pos</span><span class="o">=</span><span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_pos</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">satellite_positions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">orbit_format</span> <span class="o">=</span> <span class="n">orbit_format</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_format</span>
-        <span class="n">orbit_h5</span> <span class="o">=</span> <span class="n">orbit_h5</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_h5</span>
-        <span class="n">orbit_pos</span> <span class="o">=</span> <span class="n">orbit_pos</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_orbit_pos</span>
-        <span class="n">sat_id</span> <span class="o">=</span> <span class="n">sat_id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_id</span>
-        <span class="n">constellation</span> <span class="o">=</span> <span class="n">constellation</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_constellation</span>
-        <span class="n">prn</span> <span class="o">=</span> <span class="n">prn</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_prn</span>
-        <span class="n">sat_number</span> <span class="o">=</span> <span class="n">sat_number</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_number</span>
-        <span class="n">satpos_root</span> <span class="o">=</span> <span class="n">satpos_root</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_root</span>
-        <span class="n">satpos_date</span> <span class="o">=</span> <span class="n">satpos_date</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_satpos_date</span>
-        <span class="n">sat_mapping_file</span> <span class="o">=</span> <span class="n">sat_mapping_file</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">tec_sat_mapping_file</span>
-        <span class="n">start_offset_s</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tec_start_offset_s</span>
-            <span class="k">if</span> <span class="n">start_offset_s</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">start_offset_s</span><span class="p">)</span>
-        <span class="p">)</span>
+    <span class="n">dNe</span> <span class="o">=</span> <span class="n">tec_orchestrator</span><span class="o">.</span><span class="n">resolve_density_perturbation</span><span class="p">(</span>
+        <span class="n">dNe</span><span class="o">=</span><span class="n">dNe</span><span class="p">,</span>
+        <span class="n">continuity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="p">,</span>
+    <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">orbit_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">orbit_format</span> <span class="o">=</span> <span class="s2">&quot;h5&quot;</span> <span class="k">if</span> <span class="n">orbit_h5</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;pos&quot;</span>
+    <span class="n">receiver_id</span><span class="p">,</span> <span class="n">satellite_id</span> <span class="o">=</span> <span class="n">tec_orchestrator</span><span class="o">.</span><span class="n">build_los_ids</span><span class="p">(</span>
+        <span class="n">receiver_positions</span><span class="o">=</span><span class="n">receiver_positions</span><span class="p">,</span>
+        <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
+        <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
+        <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
+    <span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">orbit_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;h5&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">orbit_h5</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;orbit_h5 must be provided when orbit_format=&#39;h5&#39;.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">satellite_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_hdf5</span><span class="p">(</span>
-                <span class="n">orbit_h5</span><span class="p">,</span>
-                <span class="n">event_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
-                <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
-                <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
-                <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
-                <span class="n">output_dt_s</span><span class="o">=</span><span class="n">tec_config</span><span class="o">.</span><span class="n">output_dt_s</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">orbit_format</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">orbit_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">satpos_root</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">satpos_date</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">sat_number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;orbit_pos or (satpos_root, satpos_date, sat_number) &quot;</span>
-                        <span class="s2">&quot;must be provided when orbit_format=&#39;pos&#39;.&quot;</span>
-                    <span class="p">)</span>
-                <span class="n">orbit_pos</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">build_satpos_file_path</span><span class="p">(</span>
-                    <span class="n">satpos_root</span><span class="p">,</span>
-                    <span class="nb">str</span><span class="p">(</span><span class="n">satpos_date</span><span class="p">),</span>
-                    <span class="nb">int</span><span class="p">(</span><span class="n">sat_number</span><span class="p">),</span>
-                <span class="p">)</span>
-
-            <span class="n">satellite_positions</span> <span class="o">=</span> <span class="n">tec_io</span><span class="o">.</span><span class="n">load_orbits_pos</span><span class="p">(</span>
-                <span class="n">orbit_pos</span><span class="p">,</span>
-                <span class="n">event_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
-                <span class="n">sat_id</span><span class="o">=</span><span class="n">sat_id</span><span class="p">,</span>
-                <span class="n">constellation</span><span class="o">=</span><span class="n">constellation</span><span class="p">,</span>
-                <span class="n">prn</span><span class="o">=</span><span class="n">prn</span><span class="p">,</span>
-                <span class="n">sat_number</span><span class="o">=</span><span class="n">sat_number</span><span class="p">,</span>
-                <span class="n">sat_mapping_file</span><span class="o">=</span><span class="n">sat_mapping_file</span><span class="p">,</span>
-                <span class="n">start_offset_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">start_offset_s</span><span class="p">),</span>
-                <span class="n">output_dt_s</span><span class="o">=</span><span class="n">tec_config</span><span class="o">.</span><span class="n">output_dt_s</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;orbit_format must be one of: &#39;h5&#39;, &#39;pos&#39;.&quot;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">dNe</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">&quot;dNe&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="p">:</span>
-        <span class="n">dNe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="p">[</span><span class="s2">&quot;dNe&quot;</span><span class="p">]</span>
-
-    <span class="n">receiver_id</span> <span class="o">=</span> <span class="n">receiver_positions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">receiver_positions</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">satellite_id</span> <span class="o">=</span> <span class="n">sat_id</span>
-    <span class="k">if</span> <span class="n">satellite_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">constellation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">prn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">satellite_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">constellation</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">prn</span><span class="p">)</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span>
-
-    <span class="k">return</span> <span class="n">tec_tools</span><span class="o">.</span><span class="n">compute_los_tec</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">tec_orchestrator</span><span class="o">.</span><span class="n">compute_los_tec</span><span class="p">(</span>
         <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
         <span class="n">receiver_positions</span><span class="o">=</span><span class="n">receiver_positions</span><span class="p">,</span>
         <span class="n">satellite_positions</span><span class="o">=</span><span class="n">satellite_positions</span><span class="p">,</span>
@@ -9222,6 +9077,7 @@ tec_config : pyionoseis.tec.TECConfig, optional
         <span class="n">tec_config</span><span class="o">=</span><span class="n">tec_config</span><span class="p">,</span>
         <span class="n">receiver_id</span><span class="o">=</span><span class="n">receiver_id</span><span class="p">,</span>
         <span class="n">satellite_id</span><span class="o">=</span><span class="n">satellite_id</span><span class="p">,</span>
+        <span class="n">compute_los_tec_fn</span><span class="o">=</span><span class="n">tec_tools</span><span class="o">.</span><span class="n">compute_los_tec</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9256,9 +9112,7 @@ signature_file : str or Path, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">292</span>
-<span class="normal">293</span>
-<span class="normal">294</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">294</span>
 <span class="normal">295</span>
 <span class="normal">296</span>
 <span class="normal">297</span>
@@ -9352,7 +9206,9 @@ signature_file : str or Path, optional
 <span class="normal">385</span>
 <span class="normal">386</span>
 <span class="normal">387</span>
-<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_rays</span><span class="p">(</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_rays</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">raypaths_file</span><span class="p">,</span>
     <span class="n">arrivals_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -9471,39 +9327,39 @@ signature_file : str or Path, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1544</span>
-<span class="normal">1545</span>
-<span class="normal">1546</span>
-<span class="normal">1547</span>
-<span class="normal">1548</span>
-<span class="normal">1549</span>
-<span class="normal">1550</span>
-<span class="normal">1551</span>
-<span class="normal">1552</span>
-<span class="normal">1553</span>
-<span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
-<span class="normal">1557</span>
-<span class="normal">1558</span>
-<span class="normal">1559</span>
-<span class="normal">1560</span>
-<span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
-<span class="normal">1565</span>
-<span class="normal">1566</span>
-<span class="normal">1567</span>
-<span class="normal">1568</span>
-<span class="normal">1569</span>
-<span class="normal">1570</span>
-<span class="normal">1571</span>
-<span class="normal">1572</span>
-<span class="normal">1573</span>
-<span class="normal">1574</span>
-<span class="normal">1575</span>
-<span class="normal">1576</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_3Dgrid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1510</span>
+<span class="normal">1511</span>
+<span class="normal">1512</span>
+<span class="normal">1513</span>
+<span class="normal">1514</span>
+<span class="normal">1515</span>
+<span class="normal">1516</span>
+<span class="normal">1517</span>
+<span class="normal">1518</span>
+<span class="normal">1519</span>
+<span class="normal">1520</span>
+<span class="normal">1521</span>
+<span class="normal">1522</span>
+<span class="normal">1523</span>
+<span class="normal">1524</span>
+<span class="normal">1525</span>
+<span class="normal">1526</span>
+<span class="normal">1527</span>
+<span class="normal">1528</span>
+<span class="normal">1529</span>
+<span class="normal">1530</span>
+<span class="normal">1531</span>
+<span class="normal">1532</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span>
+<span class="normal">1535</span>
+<span class="normal">1536</span>
+<span class="normal">1537</span>
+<span class="normal">1538</span>
+<span class="normal">1539</span>
+<span class="normal">1540</span>
+<span class="normal">1541</span>
+<span class="normal">1542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_3Dgrid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a 3D grid with the given source and model parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -9564,7 +9420,41 @@ signature_file : str or Path, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1327</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1293</span>
+<span class="normal">1294</span>
+<span class="normal">1295</span>
+<span class="normal">1296</span>
+<span class="normal">1297</span>
+<span class="normal">1298</span>
+<span class="normal">1299</span>
+<span class="normal">1300</span>
+<span class="normal">1301</span>
+<span class="normal">1302</span>
+<span class="normal">1303</span>
+<span class="normal">1304</span>
+<span class="normal">1305</span>
+<span class="normal">1306</span>
+<span class="normal">1307</span>
+<span class="normal">1308</span>
+<span class="normal">1309</span>
+<span class="normal">1310</span>
+<span class="normal">1311</span>
+<span class="normal">1312</span>
+<span class="normal">1313</span>
+<span class="normal">1314</span>
+<span class="normal">1315</span>
+<span class="normal">1316</span>
+<span class="normal">1317</span>
+<span class="normal">1318</span>
+<span class="normal">1319</span>
+<span class="normal">1320</span>
+<span class="normal">1321</span>
+<span class="normal">1322</span>
+<span class="normal">1323</span>
+<span class="normal">1324</span>
+<span class="normal">1325</span>
+<span class="normal">1326</span>
+<span class="normal">1327</span>
 <span class="normal">1328</span>
 <span class="normal">1329</span>
 <span class="normal">1330</span>
@@ -9745,41 +9635,7 @@ signature_file : str or Path, optional
 <span class="normal">1505</span>
 <span class="normal">1506</span>
 <span class="normal">1507</span>
-<span class="normal">1508</span>
-<span class="normal">1509</span>
-<span class="normal">1510</span>
-<span class="normal">1511</span>
-<span class="normal">1512</span>
-<span class="normal">1513</span>
-<span class="normal">1514</span>
-<span class="normal">1515</span>
-<span class="normal">1516</span>
-<span class="normal">1517</span>
-<span class="normal">1518</span>
-<span class="normal">1519</span>
-<span class="normal">1520</span>
-<span class="normal">1521</span>
-<span class="normal">1522</span>
-<span class="normal">1523</span>
-<span class="normal">1524</span>
-<span class="normal">1525</span>
-<span class="normal">1526</span>
-<span class="normal">1527</span>
-<span class="normal">1528</span>
-<span class="normal">1529</span>
-<span class="normal">1530</span>
-<span class="normal">1531</span>
-<span class="normal">1532</span>
-<span class="normal">1533</span>
-<span class="normal">1534</span>
-<span class="normal">1535</span>
-<span class="normal">1536</span>
-<span class="normal">1537</span>
-<span class="normal">1538</span>
-<span class="normal">1539</span>
-<span class="normal">1540</span>
-<span class="normal">1541</span>
-<span class="normal">1542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">1508</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Log comprehensive information about the Model3D object.</span>
 
@@ -10053,9 +9909,7 @@ approximate in non-axisymmetric atmosphere/wind fields.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">394</span>
-<span class="normal">395</span>
-<span class="normal">396</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">396</span>
 <span class="normal">397</span>
 <span class="normal">398</span>
 <span class="normal">399</span>
@@ -10319,7 +10173,9 @@ approximate in non-axisymmetric atmosphere/wind fields.</p>
 <span class="normal">657</span>
 <span class="normal">658</span>
 <span class="normal">659</span>
-<span class="normal">660</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">trace_rays</span><span class="p">(</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">trace_rays</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">,</span>
     <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
