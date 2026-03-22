@@ -3,6 +3,7 @@
 """Targeted orchestrator tests for Model3D fallback and cache behavior."""
 
 from datetime import datetime, timezone
+from pathlib import Path
 import tempfile
 import unittest
 from unittest import mock
@@ -213,6 +214,19 @@ class TestModelOrchestrator(unittest.TestCase):
             },
         )
 
+    def _fake_to_netcdf(self, _ds, path, *args, **kwargs):
+        """Create a placeholder file to emulate netCDF persistence in tests."""
+        Path(path).write_bytes(b"stub-netcdf")
+
+    def _fake_load_dataset(self, _path):
+        """Return a deterministic continuity dataset for cache-hit loads."""
+        return self._fake_solve_continuity(
+            self._new_model_with_grid().grid,
+            t0_s=0.0,
+            tmax_s=10.0,
+            dt_s=5.0,
+        )
+
     def test_assign_continuity_cache_hit_skips_solver(self):
         """Continuity cache hit reuses saved output and avoids solver rerun."""
         model = self._new_model_with_grid()
@@ -220,25 +234,34 @@ class TestModelOrchestrator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with mock.patch(
-                "pyionoseis.model.continuity_tools.solve_continuity",
-                side_effect=self._fake_solve_continuity,
-            ) as mocked_solver:
-                first = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
-                second = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                "xarray.Dataset.to_netcdf",
+                autospec=True,
+                side_effect=self._fake_to_netcdf,
+            ):
+                with mock.patch(
+                    "pyionoseis.model.xr.load_dataset",
+                    side_effect=self._fake_load_dataset,
+                ):
+                    with mock.patch(
+                        "pyionoseis.model.continuity_tools.solve_continuity",
+                        side_effect=self._fake_solve_continuity,
+                    ) as mocked_solver:
+                        first = model.assign_continuity(
+                            t0_s=0.0,
+                            tmax_s=10.0,
+                            dt_s=5.0,
+                            output_dir=tmpdir,
+                            reuse_existing=True,
+                            use_kdtree=False,
+                        )
+                        second = model.assign_continuity(
+                            t0_s=0.0,
+                            tmax_s=10.0,
+                            dt_s=5.0,
+                            output_dir=tmpdir,
+                            reuse_existing=True,
+                            use_kdtree=False,
+                        )
 
         self.assertIn("dNe", first.data_vars)
         self.assertIn("dNe", second.data_vars)
@@ -252,27 +275,32 @@ class TestModelOrchestrator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with mock.patch(
-                "pyionoseis.model.continuity_tools.solve_continuity",
-                side_effect=self._fake_solve_continuity,
-            ) as mocked_solver:
-                model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    b=1.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
-                second = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    b=2.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                "xarray.Dataset.to_netcdf",
+                autospec=True,
+                side_effect=self._fake_to_netcdf,
+            ):
+                with mock.patch(
+                    "pyionoseis.model.continuity_tools.solve_continuity",
+                    side_effect=self._fake_solve_continuity,
+                ) as mocked_solver:
+                    model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        b=1.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
+                    second = model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        b=2.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
@@ -284,26 +312,31 @@ class TestModelOrchestrator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with mock.patch(
-                "pyionoseis.model.continuity_tools.solve_continuity",
-                side_effect=self._fake_solve_continuity,
-            ) as mocked_solver:
-                model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
-                second = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    force_recompute=True,
-                    use_kdtree=False,
-                )
+                "xarray.Dataset.to_netcdf",
+                autospec=True,
+                side_effect=self._fake_to_netcdf,
+            ):
+                with mock.patch(
+                    "pyionoseis.model.continuity_tools.solve_continuity",
+                    side_effect=self._fake_solve_continuity,
+                ) as mocked_solver:
+                    model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
+                    second = model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        force_recompute=True,
+                        use_kdtree=False,
+                    )
 
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
@@ -315,27 +348,32 @@ class TestModelOrchestrator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with mock.patch(
-                "pyionoseis.model.continuity_tools.solve_continuity",
-                side_effect=self._fake_solve_continuity,
-            ) as mocked_solver:
-                model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                "xarray.Dataset.to_netcdf",
+                autospec=True,
+                side_effect=self._fake_to_netcdf,
+            ):
+                with mock.patch(
+                    "pyionoseis.model.continuity_tools.solve_continuity",
+                    side_effect=self._fake_solve_continuity,
+                ) as mocked_solver:
+                    model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
-                model.raypaths.attrs["raytrace_signature_hash"] = "ray-hash-b"
-                second = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                    model.raypaths.attrs["raytrace_signature_hash"] = "ray-hash-b"
+                    second = model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
@@ -348,27 +386,32 @@ class TestModelOrchestrator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with mock.patch(
-                "pyionoseis.model.continuity_tools.solve_continuity",
-                side_effect=self._fake_solve_continuity,
-            ) as mocked_solver:
-                model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                "xarray.Dataset.to_netcdf",
+                autospec=True,
+                side_effect=self._fake_to_netcdf,
+            ):
+                with mock.patch(
+                    "pyionoseis.model.continuity_tools.solve_continuity",
+                    side_effect=self._fake_solve_continuity,
+                ) as mocked_solver:
+                    model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
-                model.raypaths.attrs["raytrace_signature_hash"] = "ray-hash-late"
-                second = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                    model.raypaths.attrs["raytrace_signature_hash"] = "ray-hash-late"
+                    second = model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
@@ -456,30 +499,35 @@ class TestModelOrchestrator(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with mock.patch(
-                "pyionoseis.model.continuity_tools.solve_continuity",
-                side_effect=self._fake_solve_continuity,
-            ) as mocked_solver:
-                model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                "xarray.Dataset.to_netcdf",
+                autospec=True,
+                side_effect=self._fake_to_netcdf,
+            ):
+                with mock.patch(
+                    "pyionoseis.model.continuity_tools.solve_continuity",
+                    side_effect=self._fake_solve_continuity,
+                ) as mocked_solver:
+                    model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
-                shifted_lat = model.grid.coords["latitude"].values.copy()
-                shifted_lat[1] = shifted_lat[1] + 1e-9
-                model.grid = model.grid.assign_coords(latitude=shifted_lat)
+                    shifted_lat = model.grid.coords["latitude"].values.copy()
+                    shifted_lat[1] = shifted_lat[1] + 1e-9
+                    model.grid = model.grid.assign_coords(latitude=shifted_lat)
 
-                second = model.assign_continuity(
-                    t0_s=0.0,
-                    tmax_s=10.0,
-                    dt_s=5.0,
-                    output_dir=tmpdir,
-                    reuse_existing=True,
-                    use_kdtree=False,
-                )
+                    second = model.assign_continuity(
+                        t0_s=0.0,
+                        tmax_s=10.0,
+                        dt_s=5.0,
+                        output_dir=tmpdir,
+                        reuse_existing=True,
+                        use_kdtree=False,
+                    )
 
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
