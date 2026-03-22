@@ -8,6 +8,37 @@ _log = logging.getLogger(__name__)
 
 _DEFAULT_EVENT_TIME = "2023-01-01T00:00:00Z"
 _EVENT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+_EVENT_TIME_FORMAT_FRACTIONAL = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+
+def _parse_event_time(time_string: str) -> datetime:
+    """Parse event time with optional fractional-second UTC precision.
+
+    Parameters
+    ----------
+    time_string : str
+        UTC timestamp in ``YYYY-MM-DDTHH:MM:SSZ`` or
+        ``YYYY-MM-DDTHH:MM:SS.ffffffZ`` format.
+
+    Returns
+    -------
+    datetime
+        Parsed event time.
+
+    Raises
+    ------
+    ValueError
+        If ``time_string`` does not match supported UTC timestamp formats.
+    """
+    for event_time_format in (_EVENT_TIME_FORMAT, _EVENT_TIME_FORMAT_FRACTIONAL):
+        try:
+            return datetime.strptime(time_string, event_time_format)
+        except ValueError:
+            continue
+    raise ValueError(
+        "Event time must be in UTC format YYYY-MM-DDTHH:MM:SSZ or "
+        "YYYY-MM-DDTHH:MM:SS.ffffffZ"
+    )
 
 class EarthquakeSource:
     """Earthquake source container loaded from TOML event metadata.
@@ -33,7 +64,7 @@ class EarthquakeSource:
         if toml_file:
             self.load_from_toml(toml_file)
         else:
-            self.time = datetime.strptime(_DEFAULT_EVENT_TIME, _EVENT_TIME_FORMAT)
+            self.time = _parse_event_time(_DEFAULT_EVENT_TIME)
             self.latitude = 0.0
             self.longitude = 0.0
             self.depth = 0.0
@@ -49,13 +80,11 @@ class EarthquakeSource:
         Raises
         ------
         ValueError
-            If event time does not follow ``%Y-%m-%dT%H:%M:%SZ``.
+            If event time does not follow supported UTC timestamp formats.
         """
         data = toml.load(toml_file)
         event = data.get("event", {})
-        self.time = datetime.strptime(
-            event.get("time", _DEFAULT_EVENT_TIME), _EVENT_TIME_FORMAT
-        )
+        self.time = _parse_event_time(event.get("time", _DEFAULT_EVENT_TIME))
         self.latitude = float(event.get("latitude", 0.0))
         self.longitude = float(event.get("longitude", 0.0))
         self.depth = float(event.get("depth", 0.0))
