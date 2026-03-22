@@ -29,6 +29,12 @@
   `_warn_az_interp_approximation()`.
 - `_build_ray_signature_payload` parameter renamed from `type` to `run_type`
   to avoid shadowing the Python built-in.
+- `Model3D.assign_continuity(...)` now delegates internal continuity preconditions,
+  signature/cache decisions, and persistence orchestration through
+  `pyionoseis/continuity_orchestrator.py` while preserving public behavior.
+- `Model3D.compute_los_tec(...)` now delegates TEC input dispatch and internal
+  LOS orchestration through `pyionoseis/tec_input_resolver.py` and
+  `pyionoseis/tec_orchestrator.py`, with unchanged public signature/semantics.
 
 ### Added
 
@@ -40,6 +46,15 @@
 - Module-level thread worker functions `_iono_profile_worker` and
   `_magfield_profile_worker` in `model.py` (required for `ThreadPoolExecutor`
   pickling safety).
+- `pyionoseis/continuity_orchestrator.py` — internal continuity assignment
+  helpers for timing resolution, scalar mapping checks, cache/signature handling,
+  and output persistence.
+- `pyionoseis/tec_input_resolver.py` — internal TEC receiver/orbit dispatch
+  helpers for `csv`/`listesta` and `h5`/`pos` resolution paths.
+- `pyionoseis/tec_orchestrator.py` — internal LOS TEC orchestration helpers for
+  density fallback, metadata ID synthesis, and compute delegation.
+- Additional TEC compatibility tests in `tests/test_model_tec_legacy.py` for
+  LOS satellite ID synthesis and continuity `dNe` fallback behavior.
 
 ## [0.0.1] - TBD
 

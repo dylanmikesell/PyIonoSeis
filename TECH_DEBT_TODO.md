@@ -12,8 +12,29 @@ The linked GitHub issue may still be open until administrative close-out.
 
 ## P0: Reduce Complexity in Model3D
 
-- [ ] Split `Model3D` responsibilities into focused helpers/services
+- [x] Split `Model3D` responsibilities into focused helpers/services
   - Issue: #1
+  - Status: implementation complete; issue open pending administrative close-out
+  - Progress:
+    - Phase 1 complete: extracted ray orchestration internals to `pyionoseis/ray_tracing_orchestrator.py`
+      and delegated `Model3D.trace_rays(...)` cache/signature/metadata helpers.
+    - Phase 2 complete: extracted grid enrichment orchestration to
+      `pyionoseis/grid_enrichment_orchestrator.py` and delegated
+      `assign_ionosphere(...)` / `assign_magnetic_field(...)`.
+    - Phase 3 complete: extracted continuity orchestration to
+      `pyionoseis/continuity_orchestrator.py` and delegated
+      `assign_continuity(...)` preconditions/cache/signature/persistence flow.
+    - Phase 4 complete: extracted TEC receiver/orbit dispatch resolution to
+      `pyionoseis/tec_input_resolver.py` and delegated branch logic from
+      `compute_los_tec(...)`.
+    - Phase 5 complete: further slimmed TEC wrapper with
+      `pyionoseis/tec_orchestrator.py` (dNe fallback, LOS ID synthesis, final
+      compute delegation), plus compatibility hardening tests.
+    - Validation:
+      - Focused gates pass (`tests.test_infraga`, `tests.test_model_orchestrator`,
+        `tests.test_model_tec_legacy`, `tests.test_continuity` as exercised per phase).
+      - Full suite pass after final cut:
+        `.venv/bin/python scripts/run_tests.py` (55 tests, OK).
   - Scope:
     - Extract ray tracing + cache/signature logic from `trace_rays`
     - Extract grid enrichment flows from `assign_ionosphere` and `assign_magnetic_field`
@@ -143,5 +164,4 @@ Run this once per release candidate or tag cut.
 8. Record outcomes in the triage issue (closed issues, new issues, priority changes).
 
 ## Suggested Implementation Order
-1. P0 `Model3D` decomposition
-2. Administrative close-out for completed issues (#2, #3, #4, #5, #6, #7)
+1. Administrative close-out for completed issues (#1, #2, #3, #4, #5, #6, #7)
