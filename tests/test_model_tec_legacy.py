@@ -24,6 +24,16 @@ class _DummySource:
 class TestModelLegacyTECDispatch(unittest.TestCase):
     """Tests legacy receiver/orbit routing in Model3D.compute_los_tec."""
 
+    @staticmethod
+    def _minimal_model():
+        model = Model3D()
+        model.grid = xr.Dataset(
+            coords={"latitude": [0.0], "longitude": [0.0], "altitude": [100.0]}
+        )
+        model.source = _DummySource(datetime(2011, 1, 1, 0, 1, 40, tzinfo=timezone.utc))
+        model.tec_output_dt_s = 1.0
+        return model
+
     def test_compute_los_tec_uses_listesta_and_satpos_root_mapping(self):
         """Model3D dispatches to legacy listesta and SATPOS loaders from config keys."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -221,6 +231,78 @@ class TestModelLegacyTECDispatch(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "No sat_id mapping found"):
                 model.compute_los_tec()
+
+    def test_compute_los_tec_prefers_csv_when_receiver_format_unspecified(self):
+        """When receiver_format is None and both inputs exist, CSV branch is chosen."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            csv_path = tmp / "receivers.csv"
+            listesta = tmp / "listesta_all.txt"
+            h5_path = tmp / "sat_orbits.h5"
+
+            csv_path.write_text("code,lat,lon,height_km\nAGRD,39.72,43.03,0.0\n", encoding="utf-8")
+            listesta.write_text(
+                "AGRD 3592016.2185 3353464.5240 4054981.8590 39.72 43.03\n",
+                encoding="utf-8",
+            )
+            h5_path.write_text("placeholder", encoding="utf-8")
+
+            model = self._minimal_model()
+            model.tec_receiver_format = None
+            model.tec_receiver_csv = str(csv_path)
+            model.tec_receiver_listesta = str(listesta)
+            model.tec_receiver_code = "AGRD"
+            model.tec_orbit_format = "h5"
+            model.tec_orbit_h5 = str(h5_path)
+            model.tec_sat_id = "G17"
+
+            with mock.patch("pyionoseis.model.tec_io.load_receiver_positions_csv") as mocked_csv:
+                with mock.patch("pyionoseis.model.tec_io.load_receiver_positions_listesta") as mocked_listesta:
+                    with mock.patch("pyionoseis.model.tec_io.load_orbits_hdf5") as mocked_h5:
+                        with mock.patch("pyionoseis.model.tec_tools.compute_los_tec") as mocked_compute:
+                            mocked_csv.return_value = {"code": "AGRD", "latitude": 39.72, "longitude": 43.03, "height_km": 0.0}
+                            mocked_h5.return_value = {"x_km": [0.0], "y_km": [0.0], "z_km": [20200.0], "time": [0.0]}
+                            mocked_compute.return_value = xr.Dataset()
+
+                            model.compute_los_tec()
+
+                            mocked_csv.assert_called_once()
+                            mocked_listesta.assert_not_called()
+
+    def test_compute_los_tec_prefers_h5_when_orbit_format_unspecified(self):
+        """When orbit_format is None and h5+pos are present, H5 branch is chosen."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            csv_path = tmp / "receivers.csv"
+            h5_path = tmp / "sat_orbits.h5"
+            pos_path = tmp / "sat17_16591.pos"
+
+            csv_path.write_text("code,lat,lon,height_km\nAGRD,39.72,43.03,0.0\n", encoding="utf-8")
+            h5_path.write_text("placeholder", encoding="utf-8")
+            pos_path.write_text("100 20000000 0 0 0 0 0\n", encoding="utf-8")
+
+            model = self._minimal_model()
+            model.tec_receiver_format = "csv"
+            model.tec_receiver_csv = str(csv_path)
+            model.tec_receiver_code = "AGRD"
+
+            model.tec_orbit_format = None
+            model.tec_orbit_h5 = str(h5_path)
+            model.tec_orbit_pos = str(pos_path)
+            model.tec_sat_id = "G17"
+
+            with mock.patch("pyionoseis.model.tec_io.load_receiver_positions_csv") as mocked_csv:
+                with mock.patch("pyionoseis.model.tec_io.load_orbits_hdf5") as mocked_h5:
+                    with mock.patch("pyionoseis.model.tec_io.load_orbits_pos") as mocked_pos:
+                        with mock.patch("pyionoseis.model.tec_tools.compute_los_tec") as mocked_compute:
+                            mocked_csv.return_value = {"code": "AGRD", "latitude": 39.72, "longitude": 43.03, "height_km": 0.0}
+                            mocked_h5.return_value = {"x_km": [0.0], "y_km": [0.0], "z_km": [20200.0], "time": [0.0]}
+                            mocked_compute.return_value = xr.Dataset()
+
+                            model.compute_los_tec()
+
+                            mocked_h5.assert_called_once()
+                            mocked_pos.assert_not_called()
 
 
 if __name__ == "__main__":

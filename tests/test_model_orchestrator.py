@@ -340,6 +340,39 @@ class TestModelOrchestrator(unittest.TestCase):
         self.assertEqual(mocked_solver.call_count, 2)
         self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
 
+    def test_assign_continuity_missing_then_present_ray_signature_recomputes(self):
+        """Continuity cache invalidates when ray signature hash appears later."""
+        model = self._new_model_with_grid()
+        self._seed_continuity_inputs(model)
+        model.raypaths.attrs.pop("raytrace_signature_hash", None)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch(
+                "pyionoseis.model.continuity_tools.solve_continuity",
+                side_effect=self._fake_solve_continuity,
+            ) as mocked_solver:
+                model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    output_dir=tmpdir,
+                    reuse_existing=True,
+                    use_kdtree=False,
+                )
+
+                model.raypaths.attrs["raytrace_signature_hash"] = "ray-hash-late"
+                second = model.assign_continuity(
+                    t0_s=0.0,
+                    tmax_s=10.0,
+                    dt_s=5.0,
+                    output_dir=tmpdir,
+                    reuse_existing=True,
+                    use_kdtree=False,
+                )
+
+        self.assertEqual(mocked_solver.call_count, 2)
+        self.assertEqual(int(second.attrs["continuity_loaded_from_cache"]), 0)
+
     def test_assign_continuity_maps_scalars_when_missing_on_grid(self):
         """Continuity maps travel time and amplitude when grid scalars are absent."""
         model = self._new_model_with_grid()
