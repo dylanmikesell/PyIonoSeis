@@ -8,7 +8,6 @@ import shutil
 import tempfile
 import warnings
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +16,7 @@ import xarray as xr
 
 from pyionoseis import infraga as infraga_tools
 from pyionoseis import continuity as continuity_tools
+from pyionoseis import grid_enrichment_orchestrator
 from pyionoseis import model_io
 from pyionoseis import ray_tracing_orchestrator
 from pyionoseis import tec as tec_tools
@@ -695,11 +695,13 @@ class Model3D(ModelPlotMixin):
         altitudes = self.grid.coords["altitude"].values
         time = self.source.get_time()
 
-        arg_list = [
-            (float(lat), float(lon), altitudes, time, ionosphere_model)
-            for lat in latitudes
-            for lon in longitudes
-        ]
+        arg_list = grid_enrichment_orchestrator.build_profile_arg_list(
+            latitudes=latitudes,
+            longitudes=longitudes,
+            altitudes=altitudes,
+            time=time,
+            model_name=ionosphere_model,
+        )
 
         _log.info(
             "Computing ionospheric electron density (%s): %d profiles "
@@ -708,29 +710,21 @@ class Model3D(ModelPlotMixin):
             len(latitudes), len(longitudes), len(altitudes),
         )
 
-        results = [None] * len(arg_list)
-        with ThreadPoolExecutor(max_workers=max_workers) as ex:
-            futures = {ex.submit(_iono_profile_worker, a): k for k, a in enumerate(arg_list)}
-            for fut in as_completed(futures):
-                k = futures[fut]
-                try:
-                    results[k] = fut.result()
-                except Exception as exc:
-                    # Intentionally broad: grid-wide jobs should continue even when
-                    # a single column fails due to transient model/dependency issues.
-                    lat_k, lon_k = arg_list[k][0], arg_list[k][1]
-                    _log.warning(
-                        "Ionosphere failed at lat=%.2f lon=%.2f; storing NaN profile.",
-                        lat_k,
-                        lon_k,
-                        exc_info=exc,
-                    )
-                    results[k] = np.full(len(altitudes), np.nan)
+        results = grid_enrichment_orchestrator.run_profile_workers(
+            arg_list=arg_list,
+            worker=_iono_profile_worker,
+            fallback_factory=lambda altitude_count: np.full(altitude_count, np.nan),
+            warning_prefix="Ionosphere",
+            logger=_log,
+            max_workers=max_workers,
+        )
 
-        electron_density_3d = np.empty((len(latitudes), len(longitudes), len(altitudes)))
-        for k, ne in enumerate(results):
-            i, j = divmod(k, len(longitudes))
-            electron_density_3d[i, j, :] = ne
+        electron_density_3d = grid_enrichment_orchestrator.reshape_scalar_profiles(
+            results=results,
+            latitude_count=len(latitudes),
+            longitude_count=len(longitudes),
+            altitude_count=len(altitudes),
+        )
 
         self.grid["electron_density"] = (
             ["latitude", "longitude", "altitude"],
@@ -791,11 +785,13 @@ class Model3D(ModelPlotMixin):
         longitudes = self.grid.coords["longitude"].values
         altitudes = self.grid.coords["altitude"].values
 
-        arg_list = [
-            (float(lat), float(lon), altitudes, self.source.get_time(), magnetic_field_model)
-            for lat in latitudes
-            for lon in longitudes
-        ]
+        arg_list = grid_enrichment_orchestrator.build_profile_arg_list(
+            latitudes=latitudes,
+            longitudes=longitudes,
+            altitudes=altitudes,
+            time=self.source.get_time(),
+            model_name=magnetic_field_model,
+        )
 
         _log.info(
             "Computing magnetic field (%s): %d profiles (%d lat × %d lon × %d alt)",
@@ -803,33 +799,24 @@ class Model3D(ModelPlotMixin):
             len(latitudes), len(longitudes), len(altitudes),
         )
 
-        results = [None] * len(arg_list)
-        with ThreadPoolExecutor(max_workers=max_workers) as ex:
-            futures = {ex.submit(_magfield_profile_worker, a): k for k, a in enumerate(arg_list)}
-            for fut in as_completed(futures):
-                k = futures[fut]
-                try:
-                    results[k] = fut.result()
-                except Exception as exc:
-                    # Intentionally broad: grid-wide jobs should continue even when
-                    # a single column fails due to transient model/dependency issues.
-                    lat_k, lon_k = arg_list[k][0], arg_list[k][1]
-                    _log.warning(
-                        "Magnetic field failed at lat=%.2f lon=%.2f; storing NaN profile.",
-                        lat_k,
-                        lon_k,
-                        exc_info=exc,
-                    )
-                    results[k] = {v: np.full(len(altitudes), np.nan) for v in _MAG_VARS}
+        results = grid_enrichment_orchestrator.run_profile_workers(
+            arg_list=arg_list,
+            worker=_magfield_profile_worker,
+            fallback_factory=lambda altitude_count: {
+                v: np.full(altitude_count, np.nan) for v in _MAG_VARS
+            },
+            warning_prefix="Magnetic field",
+            logger=_log,
+            max_workers=max_workers,
+        )
 
-        arrays = {
-            v: np.full((len(latitudes), len(longitudes), len(altitudes)), np.nan)
-            for v in _MAG_VARS
-        }
-        for k, profile in enumerate(results):
-            i, j = divmod(k, len(longitudes))
-            for v in _MAG_VARS:
-                arrays[v][i, j, :] = profile[v]
+        arrays = grid_enrichment_orchestrator.reshape_vector_profiles(
+            results=results,
+            variable_names=_MAG_VARS,
+            latitude_count=len(latitudes),
+            longitude_count=len(longitudes),
+            altitude_count=len(altitudes),
+        )
 
         dims = ["latitude", "longitude", "altitude"]
         for v in _MAG_VARS:
