@@ -22,6 +22,7 @@ from pyionoseis import model_io
 from pyionoseis import ray_tracing_orchestrator
 from pyionoseis import tec as tec_tools
 from pyionoseis import tec_io
+from pyionoseis import tec_input_resolver
 from pyionoseis import wavevector as wavevector_tools
 from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
@@ -1200,96 +1201,55 @@ class Model3D(ModelPlotMixin):
                 ipp_altitude_km=float(self.tec_ipp_altitude_km),
             )
 
-        if receiver_positions is None:
-            receiver_format = receiver_format or self.tec_receiver_format
-            receiver_csv = receiver_csv or self.tec_receiver_csv
-            receiver_listesta = receiver_listesta or self.tec_receiver_listesta
-            receiver_code = receiver_code or self.tec_receiver_code
-            if receiver_format is None:
-                receiver_format = "csv" if receiver_csv is not None else "listesta"
+        receiver_positions = tec_input_resolver.resolve_receiver_positions(
+            receiver_positions=receiver_positions,
+            receiver_format=receiver_format,
+            receiver_csv=receiver_csv,
+            receiver_listesta=receiver_listesta,
+            receiver_code=receiver_code,
+            default_receiver_format=self.tec_receiver_format,
+            default_receiver_csv=self.tec_receiver_csv,
+            default_receiver_listesta=self.tec_receiver_listesta,
+            default_receiver_code=self.tec_receiver_code,
+            load_receiver_positions_csv=tec_io.load_receiver_positions_csv,
+            load_receiver_positions_listesta=tec_io.load_receiver_positions_listesta,
+        )
 
-            if str(receiver_format).lower() == "csv":
-                if receiver_csv is None:
-                    raise ValueError(
-                        "receiver_csv must be provided when receiver_format='csv'."
-                    )
-                receiver_positions = tec_io.load_receiver_positions_csv(
-                    receiver_csv,
-                    receiver_code,
-                )
-            elif str(receiver_format).lower() == "listesta":
-                if receiver_listesta is None:
-                    raise ValueError(
-                        "receiver_listesta must be provided when receiver_format='listesta'."
-                    )
-                receiver_positions = tec_io.load_receiver_positions_listesta(
-                    receiver_listesta,
-                    receiver_code,
-                )
-            else:
-                raise ValueError(
-                    "receiver_format must be one of: 'csv', 'listesta'."
-                )
-
-        if satellite_positions is None:
-            orbit_format = orbit_format or self.tec_orbit_format
-            orbit_h5 = orbit_h5 or self.tec_orbit_h5
-            orbit_pos = orbit_pos or self.tec_orbit_pos
-            sat_id = sat_id or self.tec_sat_id
-            constellation = constellation or self.tec_constellation
-            prn = prn or self.tec_prn
-            sat_number = sat_number or self.tec_sat_number
-            satpos_root = satpos_root or self.tec_satpos_root
-            satpos_date = satpos_date or self.tec_satpos_date
-            sat_mapping_file = sat_mapping_file or self.tec_sat_mapping_file
-            start_offset_s = (
-                self.tec_start_offset_s
-                if start_offset_s is None
-                else float(start_offset_s)
-            )
-
-            if orbit_format is None:
-                orbit_format = "h5" if orbit_h5 is not None else "pos"
-
-            if str(orbit_format).lower() == "h5":
-                if orbit_h5 is None:
-                    raise ValueError(
-                        "orbit_h5 must be provided when orbit_format='h5'."
-                    )
-                satellite_positions = tec_io.load_orbits_hdf5(
-                    orbit_h5,
-                    event_time=self.source.get_time(),
-                    sat_id=sat_id,
-                    constellation=constellation,
-                    prn=prn,
-                    output_dt_s=tec_config.output_dt_s,
-                )
-            elif str(orbit_format).lower() == "pos":
-                if orbit_pos is None:
-                    if satpos_root is None or satpos_date is None or sat_number is None:
-                        raise ValueError(
-                            "orbit_pos or (satpos_root, satpos_date, sat_number) "
-                            "must be provided when orbit_format='pos'."
-                        )
-                    orbit_pos = tec_io.build_satpos_file_path(
-                        satpos_root,
-                        str(satpos_date),
-                        int(sat_number),
-                    )
-
-                satellite_positions = tec_io.load_orbits_pos(
-                    orbit_pos,
-                    event_time=self.source.get_time(),
-                    sat_id=sat_id,
-                    constellation=constellation,
-                    prn=prn,
-                    sat_number=sat_number,
-                    sat_mapping_file=sat_mapping_file,
-                    start_offset_s=float(start_offset_s),
-                    output_dt_s=tec_config.output_dt_s,
-                )
-            else:
-                raise ValueError("orbit_format must be one of: 'h5', 'pos'.")
+        (
+            satellite_positions,
+            sat_id,
+            constellation,
+            prn,
+        ) = tec_input_resolver.resolve_satellite_positions(
+            satellite_positions=satellite_positions,
+            orbit_format=orbit_format,
+            orbit_h5=orbit_h5,
+            orbit_pos=orbit_pos,
+            sat_id=sat_id,
+            constellation=constellation,
+            prn=prn,
+            sat_number=sat_number,
+            satpos_root=satpos_root,
+            satpos_date=satpos_date,
+            sat_mapping_file=sat_mapping_file,
+            start_offset_s=start_offset_s,
+            default_orbit_format=self.tec_orbit_format,
+            default_orbit_h5=self.tec_orbit_h5,
+            default_orbit_pos=self.tec_orbit_pos,
+            default_sat_id=self.tec_sat_id,
+            default_constellation=self.tec_constellation,
+            default_prn=self.tec_prn,
+            default_sat_number=self.tec_sat_number,
+            default_satpos_root=self.tec_satpos_root,
+            default_satpos_date=self.tec_satpos_date,
+            default_sat_mapping_file=self.tec_sat_mapping_file,
+            default_start_offset_s=self.tec_start_offset_s,
+            event_time=self.source.get_time(),
+            output_dt_s=tec_config.output_dt_s,
+            load_orbits_hdf5=tec_io.load_orbits_hdf5,
+            build_satpos_file_path=tec_io.build_satpos_file_path,
+            load_orbits_pos=tec_io.load_orbits_pos,
+        )
 
         if dNe is None and self.continuity is not None and "dNe" in self.continuity:
             dNe = self.continuity["dNe"]
