@@ -4631,8 +4631,7 @@ logging.basicConfig(level=logging.INFO)
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>pyionoseis/model.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  53</span>
-<span class="normal">  54</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  54</span>
 <span class="normal">  55</span>
 <span class="normal">  56</span>
 <span class="normal">  57</span>
@@ -6154,72 +6153,7 @@ logging.basicConfig(level=logging.INFO)
 <span class="normal">1573</span>
 <span class="normal">1574</span>
 <span class="normal">1575</span>
-<span class="normal">1576</span>
-<span class="normal">1577</span>
-<span class="normal">1578</span>
-<span class="normal">1579</span>
-<span class="normal">1580</span>
-<span class="normal">1581</span>
-<span class="normal">1582</span>
-<span class="normal">1583</span>
-<span class="normal">1584</span>
-<span class="normal">1585</span>
-<span class="normal">1586</span>
-<span class="normal">1587</span>
-<span class="normal">1588</span>
-<span class="normal">1589</span>
-<span class="normal">1590</span>
-<span class="normal">1591</span>
-<span class="normal">1592</span>
-<span class="normal">1593</span>
-<span class="normal">1594</span>
-<span class="normal">1595</span>
-<span class="normal">1596</span>
-<span class="normal">1597</span>
-<span class="normal">1598</span>
-<span class="normal">1599</span>
-<span class="normal">1600</span>
-<span class="normal">1601</span>
-<span class="normal">1602</span>
-<span class="normal">1603</span>
-<span class="normal">1604</span>
-<span class="normal">1605</span>
-<span class="normal">1606</span>
-<span class="normal">1607</span>
-<span class="normal">1608</span>
-<span class="normal">1609</span>
-<span class="normal">1610</span>
-<span class="normal">1611</span>
-<span class="normal">1612</span>
-<span class="normal">1613</span>
-<span class="normal">1614</span>
-<span class="normal">1615</span>
-<span class="normal">1616</span>
-<span class="normal">1617</span>
-<span class="normal">1618</span>
-<span class="normal">1619</span>
-<span class="normal">1620</span>
-<span class="normal">1621</span>
-<span class="normal">1622</span>
-<span class="normal">1623</span>
-<span class="normal">1624</span>
-<span class="normal">1625</span>
-<span class="normal">1626</span>
-<span class="normal">1627</span>
-<span class="normal">1628</span>
-<span class="normal">1629</span>
-<span class="normal">1630</span>
-<span class="normal">1631</span>
-<span class="normal">1632</span>
-<span class="normal">1633</span>
-<span class="normal">1634</span>
-<span class="normal">1635</span>
-<span class="normal">1636</span>
-<span class="normal">1637</span>
-<span class="normal">1638</span>
-<span class="normal">1639</span>
-<span class="normal">1640</span>
-<span class="normal">1641</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Model3D</span><span class="p">(</span><span class="n">ModelPlotMixin</span><span class="p">):</span>
+<span class="normal">1576</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Model3D</span><span class="p">(</span><span class="n">ModelPlotMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Central orchestrator for 3-D ionospheric CID modelling.</span>
 
 <span class="sd">    ``Model3D`` assembles a geographic 3-D grid and populates it with outputs</span>
@@ -6864,11 +6798,13 @@ logging.basicConfig(level=logging.INFO)
         <span class="n">altitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span>
 
-        <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="n">altitudes</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">ionosphere_model</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">latitudes</span>
-            <span class="k">for</span> <span class="n">lon</span> <span class="ow">in</span> <span class="n">longitudes</span>
-        <span class="p">]</span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">build_profile_arg_list</span><span class="p">(</span>
+            <span class="n">latitudes</span><span class="o">=</span><span class="n">latitudes</span><span class="p">,</span>
+            <span class="n">longitudes</span><span class="o">=</span><span class="n">longitudes</span><span class="p">,</span>
+            <span class="n">altitudes</span><span class="o">=</span><span class="n">altitudes</span><span class="p">,</span>
+            <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">ionosphere_model</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Computing ionospheric electron density (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%d</span><span class="s2"> profiles &quot;</span>
@@ -6877,29 +6813,21 @@ logging.basicConfig(level=logging.INFO)
             <span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
         <span class="p">)</span>
 
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">futures</span> <span class="o">=</span> <span class="p">{</span><span class="n">ex</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_iono_profile_worker</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)}</span>
-            <span class="k">for</span> <span class="n">fut</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
-                <span class="n">k</span> <span class="o">=</span> <span class="n">futures</span><span class="p">[</span><span class="n">fut</span><span class="p">]</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fut</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-                    <span class="c1"># Intentionally broad: grid-wide jobs should continue even when</span>
-                    <span class="c1"># a single column fails due to transient model/dependency issues.</span>
-                    <span class="n">lat_k</span><span class="p">,</span> <span class="n">lon_k</span> <span class="o">=</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="s2">&quot;Ionosphere failed at lat=</span><span class="si">%.2f</span><span class="s2"> lon=</span><span class="si">%.2f</span><span class="s2">; storing NaN profile.&quot;</span><span class="p">,</span>
-                        <span class="n">lat_k</span><span class="p">,</span>
-                        <span class="n">lon_k</span><span class="p">,</span>
-                        <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">run_profile_workers</span><span class="p">(</span>
+            <span class="n">arg_list</span><span class="o">=</span><span class="n">arg_list</span><span class="p">,</span>
+            <span class="n">worker</span><span class="o">=</span><span class="n">_iono_profile_worker</span><span class="p">,</span>
+            <span class="n">fallback_factory</span><span class="o">=</span><span class="k">lambda</span> <span class="n">altitude_count</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">altitude_count</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+            <span class="n">warning_prefix</span><span class="o">=</span><span class="s2">&quot;Ionosphere&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">_log</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="n">electron_density_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">)))</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ne</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
-            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">))</span>
-            <span class="n">electron_density_3d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">ne</span>
+        <span class="n">electron_density_3d</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">reshape_scalar_profiles</span><span class="p">(</span>
+            <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+            <span class="n">latitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span>
+            <span class="n">longitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span>
+            <span class="n">altitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;electron_density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;altitude&quot;</span><span class="p">],</span>
@@ -6960,11 +6888,13 @@ logging.basicConfig(level=logging.INFO)
         <span class="n">longitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="n">altitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
-        <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="n">altitudes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span> <span class="n">magnetic_field_model</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">latitudes</span>
-            <span class="k">for</span> <span class="n">lon</span> <span class="ow">in</span> <span class="n">longitudes</span>
-        <span class="p">]</span>
+        <span class="n">arg_list</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">build_profile_arg_list</span><span class="p">(</span>
+            <span class="n">latitudes</span><span class="o">=</span><span class="n">latitudes</span><span class="p">,</span>
+            <span class="n">longitudes</span><span class="o">=</span><span class="n">longitudes</span><span class="p">,</span>
+            <span class="n">altitudes</span><span class="o">=</span><span class="n">altitudes</span><span class="p">,</span>
+            <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="n">magnetic_field_model</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Computing magnetic field (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%d</span><span class="s2"> profiles (</span><span class="si">%d</span><span class="s2"> lat × </span><span class="si">%d</span><span class="s2"> lon × </span><span class="si">%d</span><span class="s2"> alt)&quot;</span><span class="p">,</span>
@@ -6972,33 +6902,24 @@ logging.basicConfig(level=logging.INFO)
             <span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
         <span class="p">)</span>
 
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">futures</span> <span class="o">=</span> <span class="p">{</span><span class="n">ex</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_magfield_profile_worker</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)}</span>
-            <span class="k">for</span> <span class="n">fut</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
-                <span class="n">k</span> <span class="o">=</span> <span class="n">futures</span><span class="p">[</span><span class="n">fut</span><span class="p">]</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fut</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-                    <span class="c1"># Intentionally broad: grid-wide jobs should continue even when</span>
-                    <span class="c1"># a single column fails due to transient model/dependency issues.</span>
-                    <span class="n">lat_k</span><span class="p">,</span> <span class="n">lon_k</span> <span class="o">=</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="s2">&quot;Magnetic field failed at lat=</span><span class="si">%.2f</span><span class="s2"> lon=</span><span class="si">%.2f</span><span class="s2">; storing NaN profile.&quot;</span><span class="p">,</span>
-                        <span class="n">lat_k</span><span class="p">,</span>
-                        <span class="n">lon_k</span><span class="p">,</span>
-                        <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span><span class="p">}</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">run_profile_workers</span><span class="p">(</span>
+            <span class="n">arg_list</span><span class="o">=</span><span class="n">arg_list</span><span class="p">,</span>
+            <span class="n">worker</span><span class="o">=</span><span class="n">_magfield_profile_worker</span><span class="p">,</span>
+            <span class="n">fallback_factory</span><span class="o">=</span><span class="k">lambda</span> <span class="n">altitude_count</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">altitude_count</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span>
+            <span class="p">},</span>
+            <span class="n">warning_prefix</span><span class="o">=</span><span class="s2">&quot;Magnetic field&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">_log</span><span class="p">,</span>
+            <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="n">arrays</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span>
-        <span class="p">}</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">profile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
-            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">))</span>
-            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span><span class="p">:</span>
-                <span class="n">arrays</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+        <span class="n">arrays</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">reshape_vector_profiles</span><span class="p">(</span>
+            <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+            <span class="n">variable_names</span><span class="o">=</span><span class="n">_MAG_VARS</span><span class="p">,</span>
+            <span class="n">latitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span>
+            <span class="n">longitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span>
+            <span class="n">altitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
+        <span class="p">)</span>
 
         <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;altitude&quot;</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span><span class="p">:</span>
@@ -7191,131 +7112,82 @@ logging.basicConfig(level=logging.INFO)
                     <span class="s2">&quot;assign_ionosphere() first.&quot;</span>
                 <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">t0_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">t0_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity_t0_s</span>
-        <span class="k">if</span> <span class="n">tmax_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">tmax_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity_tmax_s</span>
-        <span class="k">if</span> <span class="n">dt_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">dt_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity_dt_s</span>
-        <span class="k">if</span> <span class="n">t0_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">tmax_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">dt_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Continuity timing parameters are missing. Set [continuity] in the TOML &quot;</span>
-                <span class="s2">&quot;or pass t0_s/tmax_s/dt_s explicitly.&quot;</span>
-            <span class="p">)</span>
+        <span class="n">t0_s</span><span class="p">,</span> <span class="n">tmax_s</span><span class="p">,</span> <span class="n">dt_s</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">resolve_timing</span><span class="p">(</span>
+            <span class="n">t0_s</span><span class="o">=</span><span class="n">t0_s</span><span class="p">,</span>
+            <span class="n">tmax_s</span><span class="o">=</span><span class="n">tmax_s</span><span class="p">,</span>
+            <span class="n">dt_s</span><span class="o">=</span><span class="n">dt_s</span><span class="p">,</span>
+            <span class="n">default_t0_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity_t0_s</span><span class="p">,</span>
+            <span class="n">default_tmax_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity_tmax_s</span><span class="p">,</span>
+            <span class="n">default_dt_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity_dt_s</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">altitude_window_km</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">altitude_window_km</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">)</span>
 
         <span class="n">raypaths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raypaths</span>
-        <span class="k">if</span> <span class="s2">&quot;travel_time_s&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span>
-            <span class="n">travel_map</span> <span class="o">=</span> <span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
-                <span class="n">raypaths</span><span class="p">,</span>
-                <span class="n">ray_var</span><span class="o">=</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">,</span>
-                <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">,</span>
-                <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
-                <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
-                <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
-                <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
-                <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
-                <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
-                <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">travel_map</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s_raypoint_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">travel_map</span><span class="p">[</span>
-                <span class="s2">&quot;travel_time_s_raypoint_count&quot;</span>
-            <span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span>
+        <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">ensure_travel_time_on_grid</span><span class="p">(</span>
+            <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+            <span class="n">raypaths</span><span class="o">=</span><span class="n">raypaths</span><span class="p">,</span>
+            <span class="n">map_ray_scalar_to_grid</span><span class="o">=</span><span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">,</span>
+            <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
+            <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
+            <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
+            <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
+            <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
+            <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
+        <span class="p">)</span>
 
-        <span class="k">if</span> <span class="s2">&quot;infraga_amplitude&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;transport_amplitude_db&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">raypaths</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Raypaths missing transport_amplitude_db.&quot;</span><span class="p">)</span>
-            <span class="n">amp_db</span> <span class="o">=</span> <span class="n">raypaths</span><span class="p">[</span><span class="s2">&quot;transport_amplitude_db&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-            <span class="n">amp_linear</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">amp_db</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">)</span>
-            <span class="n">amp_paths</span> <span class="o">=</span> <span class="n">raypaths</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">amp_paths</span><span class="p">[</span><span class="s2">&quot;transport_amplitude_linear&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="p">[</span><span class="s2">&quot;ray_point&quot;</span><span class="p">],</span>
-                <span class="n">amp_linear</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">amp_paths</span><span class="p">[</span><span class="s2">&quot;transport_amplitude_linear&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dimensionless&quot;</span>
+        <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">ensure_amplitude_on_grid</span><span class="p">(</span>
+            <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+            <span class="n">raypaths</span><span class="o">=</span><span class="n">raypaths</span><span class="p">,</span>
+            <span class="n">map_ray_scalar_to_grid</span><span class="o">=</span><span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">,</span>
+            <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
+            <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
+            <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
+            <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
+            <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
+            <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
+        <span class="p">)</span>
 
-            <span class="n">amp_map</span> <span class="o">=</span> <span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
-                <span class="n">amp_paths</span><span class="p">,</span>
-                <span class="n">ray_var</span><span class="o">=</span><span class="s2">&quot;transport_amplitude_linear&quot;</span><span class="p">,</span>
-                <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">,</span>
-                <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
-                <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
-                <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
-                <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
-                <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
-                <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
-                <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp_map</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude_raypoint_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp_map</span><span class="p">[</span>
-                <span class="s2">&quot;infraga_amplitude_raypoint_count&quot;</span>
-            <span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dimensionless&quot;</span>
-
-        <span class="n">signature_payload</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;signature_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;continuity&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;t0_s&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">t0_s</span><span class="p">),</span>
-                <span class="s2">&quot;tmax_s&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">tmax_s</span><span class="p">),</span>
-                <span class="s2">&quot;dt_s&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt_s</span><span class="p">),</span>
-                <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">b</span><span class="p">),</span>
-                <span class="s2">&quot;divergence_flag&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">divergence_flag</span><span class="p">),</span>
-                <span class="s2">&quot;geomag_flag&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">geomag_flag</span><span class="p">),</span>
-                <span class="s2">&quot;store_neutral_velocity&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">store_neutral_velocity</span><span class="p">),</span>
-            <span class="p">},</span>
-            <span class="s2">&quot;mapping&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;interpolation_radius_km&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
-                <span class="s2">&quot;mapping_mode&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
-                <span class="s2">&quot;use_kdtree&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
-                <span class="s2">&quot;altitude_window_km&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
-                <span class="s2">&quot;min_points&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
-                <span class="s2">&quot;weight_power&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
-                <span class="s2">&quot;chunk_size&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
-            <span class="p">},</span>
-            <span class="s2">&quot;ray_signature_hash&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">raypaths</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raytrace_signature_hash&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;grid&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;latitude_sha256&quot;</span><span class="p">:</span> <span class="n">model_io</span><span class="o">.</span><span class="n">array_sha256</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-                <span class="p">),</span>
-                <span class="s2">&quot;longitude_sha256&quot;</span><span class="p">:</span> <span class="n">model_io</span><span class="o">.</span><span class="n">array_sha256</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-                <span class="p">),</span>
-                <span class="s2">&quot;altitude_sha256&quot;</span><span class="p">:</span> <span class="n">model_io</span><span class="o">.</span><span class="n">array_sha256</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-                <span class="p">),</span>
-            <span class="p">},</span>
-        <span class="p">}</span>
+        <span class="n">signature_payload</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">build_signature_payload</span><span class="p">(</span>
+            <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+            <span class="n">ray_signature_hash</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">raypaths</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raytrace_signature_hash&quot;</span><span class="p">),</span>
+            <span class="n">t0_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">t0_s</span><span class="p">),</span>
+            <span class="n">tmax_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">tmax_s</span><span class="p">),</span>
+            <span class="n">dt_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">dt_s</span><span class="p">),</span>
+            <span class="n">b</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">b</span><span class="p">),</span>
+            <span class="n">divergence_flag</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">divergence_flag</span><span class="p">),</span>
+            <span class="n">geomag_flag</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">geomag_flag</span><span class="p">),</span>
+            <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
+            <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
+            <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
+            <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
+            <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
+            <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
+            <span class="n">store_neutral_velocity</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">store_neutral_velocity</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="n">signature_hash</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">canonical_json_hash</span><span class="p">(</span><span class="n">signature_payload</span><span class="p">)</span>
 
-        <span class="n">output_file</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">signature_file</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">run_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
-            <span class="n">run_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">output_token</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">cache_token</span><span class="p">(</span><span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span> <span class="n">cache_id</span><span class="o">=</span><span class="n">cache_id</span><span class="p">)</span>
-            <span class="n">output_prefix</span> <span class="o">=</span> <span class="n">run_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;continuity_</span><span class="si">{</span><span class="n">output_token</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_prefix</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.nc&quot;</span><span class="p">)</span>
-            <span class="n">signature_file</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">signature_path_for_output_prefix</span><span class="p">(</span><span class="n">output_prefix</span><span class="p">)</span>
+        <span class="n">output_file</span><span class="p">,</span> <span class="n">signature_file</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">resolve_cache_paths</span><span class="p">(</span>
+            <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+            <span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span>
+            <span class="n">cache_id</span><span class="o">=</span><span class="n">cache_id</span><span class="p">,</span>
+        <span class="p">)</span>
 
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="n">reuse_existing</span>
-                <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_recompute</span>
-                <span class="ow">and</span> <span class="n">output_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
-                <span class="ow">and</span> <span class="n">signature_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
-            <span class="p">):</span>
-                <span class="k">with</span> <span class="n">signature_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-                    <span class="n">saved_raw</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
-                <span class="n">saved_payload</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">normalize_signature_payload</span><span class="p">(</span><span class="n">saved_raw</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">saved_payload</span> <span class="o">==</span> <span class="n">signature_payload</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_loaded_from_cache&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span>
+        <span class="n">cached_continuity</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">load_cached_dataset_if_valid</span><span class="p">(</span>
+            <span class="n">output_file</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span>
+            <span class="n">signature_file</span><span class="o">=</span><span class="n">signature_file</span><span class="p">,</span>
+            <span class="n">signature_payload</span><span class="o">=</span><span class="n">signature_payload</span><span class="p">,</span>
+            <span class="n">reuse_existing</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">reuse_existing</span><span class="p">),</span>
+            <span class="n">force_recompute</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">force_recompute</span><span class="p">),</span>
+            <span class="n">load_dataset</span><span class="o">=</span><span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">cached_continuity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="o">=</span> <span class="n">cached_continuity</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span>
 
         <span class="n">continuity</span> <span class="o">=</span> <span class="n">continuity_tools</span><span class="o">.</span><span class="n">solve_continuity</span><span class="p">(</span>
             <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
@@ -7328,24 +7200,20 @@ logging.basicConfig(level=logging.INFO)
             <span class="n">store_neutral_velocity</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">store_neutral_velocity</span><span class="p">),</span>
         <span class="p">)</span>
 
-        <span class="n">continuity</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span>
-        <span class="n">continuity</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span>
-
-        <span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_loaded_from_cache&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_signature_hash&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">signature_hash</span>
-        <span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_signature_payload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
-            <span class="n">signature_payload</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span>
+        <span class="n">continuity</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">annotate_continuity_result</span><span class="p">(</span>
+            <span class="n">continuity</span><span class="o">=</span><span class="n">continuity</span><span class="p">,</span>
+            <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+            <span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span>
+            <span class="n">signature_payload</span><span class="o">=</span><span class="n">signature_payload</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">signature_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">continuity</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">signature_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
-                    <span class="p">{</span><span class="s2">&quot;signature_hash&quot;</span><span class="p">:</span> <span class="n">signature_hash</span><span class="p">,</span> <span class="s2">&quot;signature&quot;</span><span class="p">:</span> <span class="n">signature_payload</span><span class="p">},</span>
-                    <span class="n">fh</span><span class="p">,</span>
-                    <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                    <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">persist_continuity_with_signature</span><span class="p">(</span>
+            <span class="n">continuity</span><span class="o">=</span><span class="n">continuity</span><span class="p">,</span>
+            <span class="n">output_file</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span>
+            <span class="n">signature_file</span><span class="o">=</span><span class="n">signature_file</span><span class="p">,</span>
+            <span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span>
+            <span class="n">signature_payload</span><span class="o">=</span><span class="n">signature_payload</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="o">=</span> <span class="n">continuity</span>
         <span class="k">return</span> <span class="n">continuity</span>
@@ -7880,7 +7748,19 @@ store_neutral_velocity : bool, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 947</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 935</span>
+<span class="normal"> 936</span>
+<span class="normal"> 937</span>
+<span class="normal"> 938</span>
+<span class="normal"> 939</span>
+<span class="normal"> 940</span>
+<span class="normal"> 941</span>
+<span class="normal"> 942</span>
+<span class="normal"> 943</span>
+<span class="normal"> 944</span>
+<span class="normal"> 945</span>
+<span class="normal"> 946</span>
+<span class="normal"> 947</span>
 <span class="normal"> 948</span>
 <span class="normal"> 949</span>
 <span class="normal"> 950</span>
@@ -8050,72 +7930,7 @@ store_neutral_velocity : bool, optional
 <span class="normal">1114</span>
 <span class="normal">1115</span>
 <span class="normal">1116</span>
-<span class="normal">1117</span>
-<span class="normal">1118</span>
-<span class="normal">1119</span>
-<span class="normal">1120</span>
-<span class="normal">1121</span>
-<span class="normal">1122</span>
-<span class="normal">1123</span>
-<span class="normal">1124</span>
-<span class="normal">1125</span>
-<span class="normal">1126</span>
-<span class="normal">1127</span>
-<span class="normal">1128</span>
-<span class="normal">1129</span>
-<span class="normal">1130</span>
-<span class="normal">1131</span>
-<span class="normal">1132</span>
-<span class="normal">1133</span>
-<span class="normal">1134</span>
-<span class="normal">1135</span>
-<span class="normal">1136</span>
-<span class="normal">1137</span>
-<span class="normal">1138</span>
-<span class="normal">1139</span>
-<span class="normal">1140</span>
-<span class="normal">1141</span>
-<span class="normal">1142</span>
-<span class="normal">1143</span>
-<span class="normal">1144</span>
-<span class="normal">1145</span>
-<span class="normal">1146</span>
-<span class="normal">1147</span>
-<span class="normal">1148</span>
-<span class="normal">1149</span>
-<span class="normal">1150</span>
-<span class="normal">1151</span>
-<span class="normal">1152</span>
-<span class="normal">1153</span>
-<span class="normal">1154</span>
-<span class="normal">1155</span>
-<span class="normal">1156</span>
-<span class="normal">1157</span>
-<span class="normal">1158</span>
-<span class="normal">1159</span>
-<span class="normal">1160</span>
-<span class="normal">1161</span>
-<span class="normal">1162</span>
-<span class="normal">1163</span>
-<span class="normal">1164</span>
-<span class="normal">1165</span>
-<span class="normal">1166</span>
-<span class="normal">1167</span>
-<span class="normal">1168</span>
-<span class="normal">1169</span>
-<span class="normal">1170</span>
-<span class="normal">1171</span>
-<span class="normal">1172</span>
-<span class="normal">1173</span>
-<span class="normal">1174</span>
-<span class="normal">1175</span>
-<span class="normal">1176</span>
-<span class="normal">1177</span>
-<span class="normal">1178</span>
-<span class="normal">1179</span>
-<span class="normal">1180</span>
-<span class="normal">1181</span>
-<span class="normal">1182</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_continuity</span><span class="p">(</span>
+<span class="normal">1117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_continuity</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">t0_s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">tmax_s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -8193,131 +8008,82 @@ store_neutral_velocity : bool, optional
                 <span class="s2">&quot;assign_ionosphere() first.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">t0_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">t0_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity_t0_s</span>
-    <span class="k">if</span> <span class="n">tmax_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">tmax_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity_tmax_s</span>
-    <span class="k">if</span> <span class="n">dt_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">dt_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity_dt_s</span>
-    <span class="k">if</span> <span class="n">t0_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">tmax_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">dt_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Continuity timing parameters are missing. Set [continuity] in the TOML &quot;</span>
-            <span class="s2">&quot;or pass t0_s/tmax_s/dt_s explicitly.&quot;</span>
-        <span class="p">)</span>
+    <span class="n">t0_s</span><span class="p">,</span> <span class="n">tmax_s</span><span class="p">,</span> <span class="n">dt_s</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">resolve_timing</span><span class="p">(</span>
+        <span class="n">t0_s</span><span class="o">=</span><span class="n">t0_s</span><span class="p">,</span>
+        <span class="n">tmax_s</span><span class="o">=</span><span class="n">tmax_s</span><span class="p">,</span>
+        <span class="n">dt_s</span><span class="o">=</span><span class="n">dt_s</span><span class="p">,</span>
+        <span class="n">default_t0_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity_t0_s</span><span class="p">,</span>
+        <span class="n">default_tmax_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity_tmax_s</span><span class="p">,</span>
+        <span class="n">default_dt_s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">continuity_dt_s</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">altitude_window_km</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">altitude_window_km</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">)</span>
 
     <span class="n">raypaths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raypaths</span>
-    <span class="k">if</span> <span class="s2">&quot;travel_time_s&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span>
-        <span class="n">travel_map</span> <span class="o">=</span> <span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
-            <span class="n">raypaths</span><span class="p">,</span>
-            <span class="n">ray_var</span><span class="o">=</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">,</span>
-            <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">,</span>
-            <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
-            <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
-            <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
-            <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
-            <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
-            <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
-            <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">travel_map</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s_raypoint_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">travel_map</span><span class="p">[</span>
-            <span class="s2">&quot;travel_time_s_raypoint_count&quot;</span>
-        <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;s&quot;</span>
+    <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">ensure_travel_time_on_grid</span><span class="p">(</span>
+        <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">raypaths</span><span class="o">=</span><span class="n">raypaths</span><span class="p">,</span>
+        <span class="n">map_ray_scalar_to_grid</span><span class="o">=</span><span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">,</span>
+        <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
+        <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
+        <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
+        <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
+        <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
+        <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
+        <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
+    <span class="p">)</span>
 
-    <span class="k">if</span> <span class="s2">&quot;infraga_amplitude&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s2">&quot;transport_amplitude_db&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">raypaths</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Raypaths missing transport_amplitude_db.&quot;</span><span class="p">)</span>
-        <span class="n">amp_db</span> <span class="o">=</span> <span class="n">raypaths</span><span class="p">[</span><span class="s2">&quot;transport_amplitude_db&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">amp_linear</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">amp_db</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">)</span>
-        <span class="n">amp_paths</span> <span class="o">=</span> <span class="n">raypaths</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">amp_paths</span><span class="p">[</span><span class="s2">&quot;transport_amplitude_linear&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="p">[</span><span class="s2">&quot;ray_point&quot;</span><span class="p">],</span>
-            <span class="n">amp_linear</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">amp_paths</span><span class="p">[</span><span class="s2">&quot;transport_amplitude_linear&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dimensionless&quot;</span>
+    <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">ensure_amplitude_on_grid</span><span class="p">(</span>
+        <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">raypaths</span><span class="o">=</span><span class="n">raypaths</span><span class="p">,</span>
+        <span class="n">map_ray_scalar_to_grid</span><span class="o">=</span><span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">,</span>
+        <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
+        <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
+        <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
+        <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
+        <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
+        <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
+        <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
+    <span class="p">)</span>
 
-        <span class="n">amp_map</span> <span class="o">=</span> <span class="n">wavevector_tools</span><span class="o">.</span><span class="n">map_ray_scalar_to_grid</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
-            <span class="n">amp_paths</span><span class="p">,</span>
-            <span class="n">ray_var</span><span class="o">=</span><span class="s2">&quot;transport_amplitude_linear&quot;</span><span class="p">,</span>
-            <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">,</span>
-            <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
-            <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
-            <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
-            <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
-            <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
-            <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
-            <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp_map</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude_raypoint_count&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amp_map</span><span class="p">[</span>
-            <span class="s2">&quot;infraga_amplitude_raypoint_count&quot;</span>
-        <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dimensionless&quot;</span>
-
-    <span class="n">signature_payload</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;signature_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;continuity&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;t0_s&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">t0_s</span><span class="p">),</span>
-            <span class="s2">&quot;tmax_s&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">tmax_s</span><span class="p">),</span>
-            <span class="s2">&quot;dt_s&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt_s</span><span class="p">),</span>
-            <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">b</span><span class="p">),</span>
-            <span class="s2">&quot;divergence_flag&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">divergence_flag</span><span class="p">),</span>
-            <span class="s2">&quot;geomag_flag&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">geomag_flag</span><span class="p">),</span>
-            <span class="s2">&quot;store_neutral_velocity&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">store_neutral_velocity</span><span class="p">),</span>
-        <span class="p">},</span>
-        <span class="s2">&quot;mapping&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;interpolation_radius_km&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
-            <span class="s2">&quot;mapping_mode&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
-            <span class="s2">&quot;use_kdtree&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
-            <span class="s2">&quot;altitude_window_km&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
-            <span class="s2">&quot;min_points&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
-            <span class="s2">&quot;weight_power&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
-            <span class="s2">&quot;chunk_size&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
-        <span class="p">},</span>
-        <span class="s2">&quot;ray_signature_hash&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">raypaths</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raytrace_signature_hash&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;grid&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;latitude_sha256&quot;</span><span class="p">:</span> <span class="n">model_io</span><span class="o">.</span><span class="n">array_sha256</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="p">),</span>
-            <span class="s2">&quot;longitude_sha256&quot;</span><span class="p">:</span> <span class="n">model_io</span><span class="o">.</span><span class="n">array_sha256</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="p">),</span>
-            <span class="s2">&quot;altitude_sha256&quot;</span><span class="p">:</span> <span class="n">model_io</span><span class="o">.</span><span class="n">array_sha256</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="p">),</span>
-        <span class="p">},</span>
-    <span class="p">}</span>
+    <span class="n">signature_payload</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">build_signature_payload</span><span class="p">(</span>
+        <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">ray_signature_hash</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">raypaths</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raytrace_signature_hash&quot;</span><span class="p">),</span>
+        <span class="n">t0_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">t0_s</span><span class="p">),</span>
+        <span class="n">tmax_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">tmax_s</span><span class="p">),</span>
+        <span class="n">dt_s</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">dt_s</span><span class="p">),</span>
+        <span class="n">b</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">b</span><span class="p">),</span>
+        <span class="n">divergence_flag</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">divergence_flag</span><span class="p">),</span>
+        <span class="n">geomag_flag</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">geomag_flag</span><span class="p">),</span>
+        <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">interpolation_radius_km</span><span class="p">),</span>
+        <span class="n">mapping_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">mapping_mode</span><span class="p">),</span>
+        <span class="n">use_kdtree</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">use_kdtree</span><span class="p">),</span>
+        <span class="n">altitude_window_km</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">altitude_window_km</span><span class="p">),</span>
+        <span class="n">min_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">min_points</span><span class="p">),</span>
+        <span class="n">weight_power</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">weight_power</span><span class="p">),</span>
+        <span class="n">chunk_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">),</span>
+        <span class="n">store_neutral_velocity</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">store_neutral_velocity</span><span class="p">),</span>
+    <span class="p">)</span>
     <span class="n">signature_hash</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">canonical_json_hash</span><span class="p">(</span><span class="n">signature_payload</span><span class="p">)</span>
 
-    <span class="n">output_file</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">signature_file</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">run_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
-        <span class="n">run_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">output_token</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">cache_token</span><span class="p">(</span><span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span> <span class="n">cache_id</span><span class="o">=</span><span class="n">cache_id</span><span class="p">)</span>
-        <span class="n">output_prefix</span> <span class="o">=</span> <span class="n">run_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;continuity_</span><span class="si">{</span><span class="n">output_token</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_prefix</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.nc&quot;</span><span class="p">)</span>
-        <span class="n">signature_file</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">signature_path_for_output_prefix</span><span class="p">(</span><span class="n">output_prefix</span><span class="p">)</span>
+    <span class="n">output_file</span><span class="p">,</span> <span class="n">signature_file</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">resolve_cache_paths</span><span class="p">(</span>
+        <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">,</span>
+        <span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span>
+        <span class="n">cache_id</span><span class="o">=</span><span class="n">cache_id</span><span class="p">,</span>
+    <span class="p">)</span>
 
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="n">reuse_existing</span>
-            <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_recompute</span>
-            <span class="ow">and</span> <span class="n">output_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
-            <span class="ow">and</span> <span class="n">signature_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
-        <span class="p">):</span>
-            <span class="k">with</span> <span class="n">signature_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-                <span class="n">saved_raw</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
-            <span class="n">saved_payload</span> <span class="o">=</span> <span class="n">model_io</span><span class="o">.</span><span class="n">normalize_signature_payload</span><span class="p">(</span><span class="n">saved_raw</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">saved_payload</span> <span class="o">==</span> <span class="n">signature_payload</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_loaded_from_cache&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span>
+    <span class="n">cached_continuity</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">load_cached_dataset_if_valid</span><span class="p">(</span>
+        <span class="n">output_file</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span>
+        <span class="n">signature_file</span><span class="o">=</span><span class="n">signature_file</span><span class="p">,</span>
+        <span class="n">signature_payload</span><span class="o">=</span><span class="n">signature_payload</span><span class="p">,</span>
+        <span class="n">reuse_existing</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">reuse_existing</span><span class="p">),</span>
+        <span class="n">force_recompute</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">force_recompute</span><span class="p">),</span>
+        <span class="n">load_dataset</span><span class="o">=</span><span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">cached_continuity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="o">=</span> <span class="n">cached_continuity</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span>
 
     <span class="n">continuity</span> <span class="o">=</span> <span class="n">continuity_tools</span><span class="o">.</span><span class="n">solve_continuity</span><span class="p">(</span>
         <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
@@ -8330,24 +8096,20 @@ store_neutral_velocity : bool, optional
         <span class="n">store_neutral_velocity</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">store_neutral_velocity</span><span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="n">continuity</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;travel_time_s&quot;</span><span class="p">]</span>
-    <span class="n">continuity</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;infraga_amplitude&quot;</span><span class="p">]</span>
-
-    <span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_loaded_from_cache&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_signature_hash&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">signature_hash</span>
-    <span class="n">continuity</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;continuity_signature_payload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
-        <span class="n">signature_payload</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">continuity</span> <span class="o">=</span> <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">annotate_continuity_result</span><span class="p">(</span>
+        <span class="n">continuity</span><span class="o">=</span><span class="n">continuity</span><span class="p">,</span>
+        <span class="n">grid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span>
+        <span class="n">signature_payload</span><span class="o">=</span><span class="n">signature_payload</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">signature_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">continuity</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">signature_file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
-                <span class="p">{</span><span class="s2">&quot;signature_hash&quot;</span><span class="p">:</span> <span class="n">signature_hash</span><span class="p">,</span> <span class="s2">&quot;signature&quot;</span><span class="p">:</span> <span class="n">signature_payload</span><span class="p">},</span>
-                <span class="n">fh</span><span class="p">,</span>
-                <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-                <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
+    <span class="n">continuity_orchestrator</span><span class="o">.</span><span class="n">persist_continuity_with_signature</span><span class="p">(</span>
+        <span class="n">continuity</span><span class="o">=</span><span class="n">continuity</span><span class="p">,</span>
+        <span class="n">output_file</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span>
+        <span class="n">signature_file</span><span class="o">=</span><span class="n">signature_file</span><span class="p">,</span>
+        <span class="n">signature_hash</span><span class="o">=</span><span class="n">signature_hash</span><span class="p">,</span>
+        <span class="n">signature_payload</span><span class="o">=</span><span class="n">signature_payload</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">continuity</span> <span class="o">=</span> <span class="n">continuity</span>
     <span class="k">return</span> <span class="n">continuity</span>
@@ -8385,8 +8147,7 @@ ValueError
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">661</span>
-<span class="normal">662</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">662</span>
 <span class="normal">663</span>
 <span class="normal">664</span>
 <span class="normal">665</span>
@@ -8464,12 +8225,7 @@ ValueError
 <span class="normal">737</span>
 <span class="normal">738</span>
 <span class="normal">739</span>
-<span class="normal">740</span>
-<span class="normal">741</span>
-<span class="normal">742</span>
-<span class="normal">743</span>
-<span class="normal">744</span>
-<span class="normal">745</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_ionosphere</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ionosphere_model</span><span class="o">=</span><span class="s2">&quot;iri2020&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">740</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_ionosphere</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ionosphere_model</span><span class="o">=</span><span class="s2">&quot;iri2020&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Assign ionospheric electron density to all grid points.</span>
 
 <span class="sd">    Computes IRI2020 electron density profiles in parallel across every</span>
@@ -8506,11 +8262,13 @@ ValueError
     <span class="n">altitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
     <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span>
 
-    <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="n">altitudes</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">ionosphere_model</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">latitudes</span>
-        <span class="k">for</span> <span class="n">lon</span> <span class="ow">in</span> <span class="n">longitudes</span>
-    <span class="p">]</span>
+    <span class="n">arg_list</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">build_profile_arg_list</span><span class="p">(</span>
+        <span class="n">latitudes</span><span class="o">=</span><span class="n">latitudes</span><span class="p">,</span>
+        <span class="n">longitudes</span><span class="o">=</span><span class="n">longitudes</span><span class="p">,</span>
+        <span class="n">altitudes</span><span class="o">=</span><span class="n">altitudes</span><span class="p">,</span>
+        <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="o">=</span><span class="n">ionosphere_model</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Computing ionospheric electron density (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%d</span><span class="s2"> profiles &quot;</span>
@@ -8519,29 +8277,21 @@ ValueError
         <span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-        <span class="n">futures</span> <span class="o">=</span> <span class="p">{</span><span class="n">ex</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_iono_profile_worker</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)}</span>
-        <span class="k">for</span> <span class="n">fut</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
-            <span class="n">k</span> <span class="o">=</span> <span class="n">futures</span><span class="p">[</span><span class="n">fut</span><span class="p">]</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fut</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-                <span class="c1"># Intentionally broad: grid-wide jobs should continue even when</span>
-                <span class="c1"># a single column fails due to transient model/dependency issues.</span>
-                <span class="n">lat_k</span><span class="p">,</span> <span class="n">lon_k</span> <span class="o">=</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;Ionosphere failed at lat=</span><span class="si">%.2f</span><span class="s2"> lon=</span><span class="si">%.2f</span><span class="s2">; storing NaN profile.&quot;</span><span class="p">,</span>
-                    <span class="n">lat_k</span><span class="p">,</span>
-                    <span class="n">lon_k</span><span class="p">,</span>
-                    <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">run_profile_workers</span><span class="p">(</span>
+        <span class="n">arg_list</span><span class="o">=</span><span class="n">arg_list</span><span class="p">,</span>
+        <span class="n">worker</span><span class="o">=</span><span class="n">_iono_profile_worker</span><span class="p">,</span>
+        <span class="n">fallback_factory</span><span class="o">=</span><span class="k">lambda</span> <span class="n">altitude_count</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">altitude_count</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+        <span class="n">warning_prefix</span><span class="o">=</span><span class="s2">&quot;Ionosphere&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="o">=</span><span class="n">_log</span><span class="p">,</span>
+        <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="n">electron_density_3d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">)))</span>
-    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ne</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
-        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">))</span>
-        <span class="n">electron_density_3d</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">ne</span>
+    <span class="n">electron_density_3d</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">reshape_scalar_profiles</span><span class="p">(</span>
+        <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+        <span class="n">latitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span>
+        <span class="n">longitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span>
+        <span class="n">altitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
+    <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="s2">&quot;electron_density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;altitude&quot;</span><span class="p">],</span>
@@ -8597,7 +8347,12 @@ Derived (nT): <code>total_field</code>, <code>horizontal_intensity</code></p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">747</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">742</span>
+<span class="normal">743</span>
+<span class="normal">744</span>
+<span class="normal">745</span>
+<span class="normal">746</span>
+<span class="normal">747</span>
 <span class="normal">748</span>
 <span class="normal">749</span>
 <span class="normal">750</span>
@@ -8687,19 +8442,7 @@ Derived (nT): <code>total_field</code>, <code>horizontal_intensity</code></p>
 <span class="normal">834</span>
 <span class="normal">835</span>
 <span class="normal">836</span>
-<span class="normal">837</span>
-<span class="normal">838</span>
-<span class="normal">839</span>
-<span class="normal">840</span>
-<span class="normal">841</span>
-<span class="normal">842</span>
-<span class="normal">843</span>
-<span class="normal">844</span>
-<span class="normal">845</span>
-<span class="normal">846</span>
-<span class="normal">847</span>
-<span class="normal">848</span>
-<span class="normal">849</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_magnetic_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">magnetic_field_model</span><span class="o">=</span><span class="s2">&quot;igrf&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">837</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_magnetic_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">magnetic_field_model</span><span class="o">=</span><span class="s2">&quot;igrf&quot;</span><span class="p">,</span> <span class="n">max_workers</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Assign magnetic field parameters to all grid points.</span>
 
 <span class="sd">    Computes IGRF magnetic field components and derived parameters in</span>
@@ -8746,11 +8489,13 @@ Derived (nT): <code>total_field</code>, <code>horizontal_intensity</code></p>
     <span class="n">longitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;longitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
     <span class="n">altitudes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s2">&quot;altitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
-    <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="n">altitudes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span> <span class="n">magnetic_field_model</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">latitudes</span>
-        <span class="k">for</span> <span class="n">lon</span> <span class="ow">in</span> <span class="n">longitudes</span>
-    <span class="p">]</span>
+    <span class="n">arg_list</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">build_profile_arg_list</span><span class="p">(</span>
+        <span class="n">latitudes</span><span class="o">=</span><span class="n">latitudes</span><span class="p">,</span>
+        <span class="n">longitudes</span><span class="o">=</span><span class="n">longitudes</span><span class="p">,</span>
+        <span class="n">altitudes</span><span class="o">=</span><span class="n">altitudes</span><span class="p">,</span>
+        <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">get_time</span><span class="p">(),</span>
+        <span class="n">model_name</span><span class="o">=</span><span class="n">magnetic_field_model</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Computing magnetic field (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%d</span><span class="s2"> profiles (</span><span class="si">%d</span><span class="s2"> lat × </span><span class="si">%d</span><span class="s2"> lon × </span><span class="si">%d</span><span class="s2"> alt)&quot;</span><span class="p">,</span>
@@ -8758,33 +8503,24 @@ Derived (nT): <code>total_field</code>, <code>horizontal_intensity</code></p>
         <span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-        <span class="n">futures</span> <span class="o">=</span> <span class="p">{</span><span class="n">ex</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_magfield_profile_worker</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arg_list</span><span class="p">)}</span>
-        <span class="k">for</span> <span class="n">fut</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
-            <span class="n">k</span> <span class="o">=</span> <span class="n">futures</span><span class="p">[</span><span class="n">fut</span><span class="p">]</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">fut</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-                <span class="c1"># Intentionally broad: grid-wide jobs should continue even when</span>
-                <span class="c1"># a single column fails due to transient model/dependency issues.</span>
-                <span class="n">lat_k</span><span class="p">,</span> <span class="n">lon_k</span> <span class="o">=</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">arg_list</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;Magnetic field failed at lat=</span><span class="si">%.2f</span><span class="s2"> lon=</span><span class="si">%.2f</span><span class="s2">; storing NaN profile.&quot;</span><span class="p">,</span>
-                    <span class="n">lat_k</span><span class="p">,</span>
-                    <span class="n">lon_k</span><span class="p">,</span>
-                    <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">results</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span><span class="p">}</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">run_profile_workers</span><span class="p">(</span>
+        <span class="n">arg_list</span><span class="o">=</span><span class="n">arg_list</span><span class="p">,</span>
+        <span class="n">worker</span><span class="o">=</span><span class="n">_magfield_profile_worker</span><span class="p">,</span>
+        <span class="n">fallback_factory</span><span class="o">=</span><span class="k">lambda</span> <span class="n">altitude_count</span><span class="p">:</span> <span class="p">{</span>
+            <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">altitude_count</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span>
+        <span class="p">},</span>
+        <span class="n">warning_prefix</span><span class="o">=</span><span class="s2">&quot;Magnetic field&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="o">=</span><span class="n">_log</span><span class="p">,</span>
+        <span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="n">arrays</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">v</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span>
-    <span class="p">}</span>
-    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">profile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
-        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">))</span>
-        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span><span class="p">:</span>
-            <span class="n">arrays</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+    <span class="n">arrays</span> <span class="o">=</span> <span class="n">grid_enrichment_orchestrator</span><span class="o">.</span><span class="n">reshape_vector_profiles</span><span class="p">(</span>
+        <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+        <span class="n">variable_names</span><span class="o">=</span><span class="n">_MAG_VARS</span><span class="p">,</span>
+        <span class="n">latitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">latitudes</span><span class="p">),</span>
+        <span class="n">longitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">longitudes</span><span class="p">),</span>
+        <span class="n">altitude_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">altitudes</span><span class="p">),</span>
+    <span class="p">)</span>
 
     <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;altitude&quot;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_MAG_VARS</span><span class="p">:</span>
@@ -8849,7 +8585,19 @@ keep_ray_wavevectors : bool, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">851</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">839</span>
+<span class="normal">840</span>
+<span class="normal">841</span>
+<span class="normal">842</span>
+<span class="normal">843</span>
+<span class="normal">844</span>
+<span class="normal">845</span>
+<span class="normal">846</span>
+<span class="normal">847</span>
+<span class="normal">848</span>
+<span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
 <span class="normal">852</span>
 <span class="normal">853</span>
 <span class="normal">854</span>
@@ -8931,19 +8679,7 @@ keep_ray_wavevectors : bool, optional
 <span class="normal">930</span>
 <span class="normal">931</span>
 <span class="normal">932</span>
-<span class="normal">933</span>
-<span class="normal">934</span>
-<span class="normal">935</span>
-<span class="normal">936</span>
-<span class="normal">937</span>
-<span class="normal">938</span>
-<span class="normal">939</span>
-<span class="normal">940</span>
-<span class="normal">941</span>
-<span class="normal">942</span>
-<span class="normal">943</span>
-<span class="normal">944</span>
-<span class="normal">945</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_wavevector</span><span class="p">(</span>
+<span class="normal">933</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">assign_wavevector</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">interpolation_radius_km</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
     <span class="n">mapping_mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
@@ -9104,7 +8840,72 @@ tec_config : pyionoseis.tec.TECConfig, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1184</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span>
+<span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span>
+<span class="normal">1165</span>
+<span class="normal">1166</span>
+<span class="normal">1167</span>
+<span class="normal">1168</span>
+<span class="normal">1169</span>
+<span class="normal">1170</span>
+<span class="normal">1171</span>
+<span class="normal">1172</span>
+<span class="normal">1173</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span>
+<span class="normal">1179</span>
+<span class="normal">1180</span>
+<span class="normal">1181</span>
+<span class="normal">1182</span>
+<span class="normal">1183</span>
+<span class="normal">1184</span>
 <span class="normal">1185</span>
 <span class="normal">1186</span>
 <span class="normal">1187</span>
@@ -9230,72 +9031,7 @@ tec_config : pyionoseis.tec.TECConfig, optional
 <span class="normal">1307</span>
 <span class="normal">1308</span>
 <span class="normal">1309</span>
-<span class="normal">1310</span>
-<span class="normal">1311</span>
-<span class="normal">1312</span>
-<span class="normal">1313</span>
-<span class="normal">1314</span>
-<span class="normal">1315</span>
-<span class="normal">1316</span>
-<span class="normal">1317</span>
-<span class="normal">1318</span>
-<span class="normal">1319</span>
-<span class="normal">1320</span>
-<span class="normal">1321</span>
-<span class="normal">1322</span>
-<span class="normal">1323</span>
-<span class="normal">1324</span>
-<span class="normal">1325</span>
-<span class="normal">1326</span>
-<span class="normal">1327</span>
-<span class="normal">1328</span>
-<span class="normal">1329</span>
-<span class="normal">1330</span>
-<span class="normal">1331</span>
-<span class="normal">1332</span>
-<span class="normal">1333</span>
-<span class="normal">1334</span>
-<span class="normal">1335</span>
-<span class="normal">1336</span>
-<span class="normal">1337</span>
-<span class="normal">1338</span>
-<span class="normal">1339</span>
-<span class="normal">1340</span>
-<span class="normal">1341</span>
-<span class="normal">1342</span>
-<span class="normal">1343</span>
-<span class="normal">1344</span>
-<span class="normal">1345</span>
-<span class="normal">1346</span>
-<span class="normal">1347</span>
-<span class="normal">1348</span>
-<span class="normal">1349</span>
-<span class="normal">1350</span>
-<span class="normal">1351</span>
-<span class="normal">1352</span>
-<span class="normal">1353</span>
-<span class="normal">1354</span>
-<span class="normal">1355</span>
-<span class="normal">1356</span>
-<span class="normal">1357</span>
-<span class="normal">1358</span>
-<span class="normal">1359</span>
-<span class="normal">1360</span>
-<span class="normal">1361</span>
-<span class="normal">1362</span>
-<span class="normal">1363</span>
-<span class="normal">1364</span>
-<span class="normal">1365</span>
-<span class="normal">1366</span>
-<span class="normal">1367</span>
-<span class="normal">1368</span>
-<span class="normal">1369</span>
-<span class="normal">1370</span>
-<span class="normal">1371</span>
-<span class="normal">1372</span>
-<span class="normal">1373</span>
-<span class="normal">1374</span>
-<span class="normal">1375</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_los_tec</span><span class="p">(</span>
+<span class="normal">1310</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_los_tec</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">receiver_positions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">satellite_positions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -9520,8 +9256,7 @@ signature_file : str or Path, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">291</span>
-<span class="normal">292</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">292</span>
 <span class="normal">293</span>
 <span class="normal">294</span>
 <span class="normal">295</span>
@@ -9616,7 +9351,8 @@ signature_file : str or Path, optional
 <span class="normal">384</span>
 <span class="normal">385</span>
 <span class="normal">386</span>
-<span class="normal">387</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_rays</span><span class="p">(</span>
+<span class="normal">387</span>
+<span class="normal">388</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_rays</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">raypaths_file</span><span class="p">,</span>
     <span class="n">arrivals_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -9735,39 +9471,39 @@ signature_file : str or Path, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1609</span>
-<span class="normal">1610</span>
-<span class="normal">1611</span>
-<span class="normal">1612</span>
-<span class="normal">1613</span>
-<span class="normal">1614</span>
-<span class="normal">1615</span>
-<span class="normal">1616</span>
-<span class="normal">1617</span>
-<span class="normal">1618</span>
-<span class="normal">1619</span>
-<span class="normal">1620</span>
-<span class="normal">1621</span>
-<span class="normal">1622</span>
-<span class="normal">1623</span>
-<span class="normal">1624</span>
-<span class="normal">1625</span>
-<span class="normal">1626</span>
-<span class="normal">1627</span>
-<span class="normal">1628</span>
-<span class="normal">1629</span>
-<span class="normal">1630</span>
-<span class="normal">1631</span>
-<span class="normal">1632</span>
-<span class="normal">1633</span>
-<span class="normal">1634</span>
-<span class="normal">1635</span>
-<span class="normal">1636</span>
-<span class="normal">1637</span>
-<span class="normal">1638</span>
-<span class="normal">1639</span>
-<span class="normal">1640</span>
-<span class="normal">1641</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_3Dgrid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1544</span>
+<span class="normal">1545</span>
+<span class="normal">1546</span>
+<span class="normal">1547</span>
+<span class="normal">1548</span>
+<span class="normal">1549</span>
+<span class="normal">1550</span>
+<span class="normal">1551</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span>
+<span class="normal">1555</span>
+<span class="normal">1556</span>
+<span class="normal">1557</span>
+<span class="normal">1558</span>
+<span class="normal">1559</span>
+<span class="normal">1560</span>
+<span class="normal">1561</span>
+<span class="normal">1562</span>
+<span class="normal">1563</span>
+<span class="normal">1564</span>
+<span class="normal">1565</span>
+<span class="normal">1566</span>
+<span class="normal">1567</span>
+<span class="normal">1568</span>
+<span class="normal">1569</span>
+<span class="normal">1570</span>
+<span class="normal">1571</span>
+<span class="normal">1572</span>
+<span class="normal">1573</span>
+<span class="normal">1574</span>
+<span class="normal">1575</span>
+<span class="normal">1576</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">make_3Dgrid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a 3D grid with the given source and model parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -9828,7 +9564,72 @@ signature_file : str or Path, optional
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1392</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1327</span>
+<span class="normal">1328</span>
+<span class="normal">1329</span>
+<span class="normal">1330</span>
+<span class="normal">1331</span>
+<span class="normal">1332</span>
+<span class="normal">1333</span>
+<span class="normal">1334</span>
+<span class="normal">1335</span>
+<span class="normal">1336</span>
+<span class="normal">1337</span>
+<span class="normal">1338</span>
+<span class="normal">1339</span>
+<span class="normal">1340</span>
+<span class="normal">1341</span>
+<span class="normal">1342</span>
+<span class="normal">1343</span>
+<span class="normal">1344</span>
+<span class="normal">1345</span>
+<span class="normal">1346</span>
+<span class="normal">1347</span>
+<span class="normal">1348</span>
+<span class="normal">1349</span>
+<span class="normal">1350</span>
+<span class="normal">1351</span>
+<span class="normal">1352</span>
+<span class="normal">1353</span>
+<span class="normal">1354</span>
+<span class="normal">1355</span>
+<span class="normal">1356</span>
+<span class="normal">1357</span>
+<span class="normal">1358</span>
+<span class="normal">1359</span>
+<span class="normal">1360</span>
+<span class="normal">1361</span>
+<span class="normal">1362</span>
+<span class="normal">1363</span>
+<span class="normal">1364</span>
+<span class="normal">1365</span>
+<span class="normal">1366</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span>
+<span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span>
+<span class="normal">1379</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span>
+<span class="normal">1382</span>
+<span class="normal">1383</span>
+<span class="normal">1384</span>
+<span class="normal">1385</span>
+<span class="normal">1386</span>
+<span class="normal">1387</span>
+<span class="normal">1388</span>
+<span class="normal">1389</span>
+<span class="normal">1390</span>
+<span class="normal">1391</span>
+<span class="normal">1392</span>
 <span class="normal">1393</span>
 <span class="normal">1394</span>
 <span class="normal">1395</span>
@@ -9978,72 +9779,7 @@ signature_file : str or Path, optional
 <span class="normal">1539</span>
 <span class="normal">1540</span>
 <span class="normal">1541</span>
-<span class="normal">1542</span>
-<span class="normal">1543</span>
-<span class="normal">1544</span>
-<span class="normal">1545</span>
-<span class="normal">1546</span>
-<span class="normal">1547</span>
-<span class="normal">1548</span>
-<span class="normal">1549</span>
-<span class="normal">1550</span>
-<span class="normal">1551</span>
-<span class="normal">1552</span>
-<span class="normal">1553</span>
-<span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
-<span class="normal">1557</span>
-<span class="normal">1558</span>
-<span class="normal">1559</span>
-<span class="normal">1560</span>
-<span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
-<span class="normal">1565</span>
-<span class="normal">1566</span>
-<span class="normal">1567</span>
-<span class="normal">1568</span>
-<span class="normal">1569</span>
-<span class="normal">1570</span>
-<span class="normal">1571</span>
-<span class="normal">1572</span>
-<span class="normal">1573</span>
-<span class="normal">1574</span>
-<span class="normal">1575</span>
-<span class="normal">1576</span>
-<span class="normal">1577</span>
-<span class="normal">1578</span>
-<span class="normal">1579</span>
-<span class="normal">1580</span>
-<span class="normal">1581</span>
-<span class="normal">1582</span>
-<span class="normal">1583</span>
-<span class="normal">1584</span>
-<span class="normal">1585</span>
-<span class="normal">1586</span>
-<span class="normal">1587</span>
-<span class="normal">1588</span>
-<span class="normal">1589</span>
-<span class="normal">1590</span>
-<span class="normal">1591</span>
-<span class="normal">1592</span>
-<span class="normal">1593</span>
-<span class="normal">1594</span>
-<span class="normal">1595</span>
-<span class="normal">1596</span>
-<span class="normal">1597</span>
-<span class="normal">1598</span>
-<span class="normal">1599</span>
-<span class="normal">1600</span>
-<span class="normal">1601</span>
-<span class="normal">1602</span>
-<span class="normal">1603</span>
-<span class="normal">1604</span>
-<span class="normal">1605</span>
-<span class="normal">1606</span>
-<span class="normal">1607</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">1542</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">print_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Log comprehensive information about the Model3D object.</span>
 
@@ -10317,8 +10053,7 @@ approximate in non-axisymmetric atmosphere/wind fields.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>pyionoseis/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">393</span>
-<span class="normal">394</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">394</span>
 <span class="normal">395</span>
 <span class="normal">396</span>
 <span class="normal">397</span>
@@ -10583,7 +10318,8 @@ approximate in non-axisymmetric atmosphere/wind fields.</p>
 <span class="normal">656</span>
 <span class="normal">657</span>
 <span class="normal">658</span>
-<span class="normal">659</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">trace_rays</span><span class="p">(</span>
+<span class="normal">659</span>
+<span class="normal">660</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">trace_rays</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">,</span>
     <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
