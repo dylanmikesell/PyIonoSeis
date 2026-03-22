@@ -23,6 +23,7 @@ from pyionoseis import ray_tracing_orchestrator
 from pyionoseis import tec as tec_tools
 from pyionoseis import tec_io
 from pyionoseis import tec_input_resolver
+from pyionoseis import tec_orchestrator
 from pyionoseis import wavevector as wavevector_tools
 from pyionoseis.atmosphere import Atmosphere1D
 from pyionoseis.igrf import MagneticField1D, PPIGRF_AVAILABLE
@@ -1251,15 +1252,19 @@ class Model3D(ModelPlotMixin):
             load_orbits_pos=tec_io.load_orbits_pos,
         )
 
-        if dNe is None and self.continuity is not None and "dNe" in self.continuity:
-            dNe = self.continuity["dNe"]
+        dNe = tec_orchestrator.resolve_density_perturbation(
+            dNe=dNe,
+            continuity=self.continuity,
+        )
 
-        receiver_id = receiver_positions.get("code") if isinstance(receiver_positions, dict) else None
-        satellite_id = sat_id
-        if satellite_id is None and constellation is not None and prn is not None:
-            satellite_id = f"{constellation}{int(prn):02d}"
+        receiver_id, satellite_id = tec_orchestrator.build_los_ids(
+            receiver_positions=receiver_positions,
+            sat_id=sat_id,
+            constellation=constellation,
+            prn=prn,
+        )
 
-        return tec_tools.compute_los_tec(
+        return tec_orchestrator.compute_los_tec(
             grid=self.grid,
             receiver_positions=receiver_positions,
             satellite_positions=satellite_positions,
@@ -1267,6 +1272,7 @@ class Model3D(ModelPlotMixin):
             tec_config=tec_config,
             receiver_id=receiver_id,
             satellite_id=satellite_id,
+            compute_los_tec_fn=tec_tools.compute_los_tec,
         )
 
 

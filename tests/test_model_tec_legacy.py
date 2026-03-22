@@ -304,6 +304,109 @@ class TestModelLegacyTECDispatch(unittest.TestCase):
                             mocked_h5.assert_called_once()
                             mocked_pos.assert_not_called()
 
+    def test_compute_los_tec_builds_satellite_id_from_constellation_prn(self):
+        """LOS metadata satellite_id is synthesized from constellation and prn."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            csv_path = tmp / "receivers.csv"
+            h5_path = tmp / "sat_orbits.h5"
+
+            csv_path.write_text(
+                "code,lat,lon,height_km\nAGRD,39.72,43.03,0.0\n",
+                encoding="utf-8",
+            )
+            h5_path.write_text("placeholder", encoding="utf-8")
+
+            model = self._minimal_model()
+            model.tec_receiver_format = "csv"
+            model.tec_receiver_csv = str(csv_path)
+            model.tec_receiver_code = "AGRD"
+            model.tec_orbit_format = "h5"
+            model.tec_orbit_h5 = str(h5_path)
+            model.tec_sat_id = None
+            model.tec_constellation = "GPS"
+            model.tec_prn = 17
+
+            with mock.patch("pyionoseis.model.tec_io.load_receiver_positions_csv") as mocked_csv:
+                with mock.patch("pyionoseis.model.tec_io.load_orbits_hdf5") as mocked_h5:
+                    with mock.patch("pyionoseis.model.tec_tools.compute_los_tec") as mocked_compute:
+                        mocked_csv.return_value = {
+                            "code": "AGRD",
+                            "latitude": 39.72,
+                            "longitude": 43.03,
+                            "height_km": 0.0,
+                        }
+                        mocked_h5.return_value = {
+                            "x_km": [0.0],
+                            "y_km": [0.0],
+                            "z_km": [20200.0],
+                            "time": [0.0],
+                        }
+                        mocked_compute.return_value = xr.Dataset()
+
+                        model.compute_los_tec()
+
+                        kwargs = mocked_compute.call_args.kwargs
+                        self.assertEqual(kwargs["satellite_id"], "GPS17")
+
+    def test_compute_los_tec_uses_continuity_dne_when_not_provided(self):
+        """compute_los_tec falls back to continuity dNe when explicit dNe is absent."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            csv_path = tmp / "receivers.csv"
+            h5_path = tmp / "sat_orbits.h5"
+
+            csv_path.write_text(
+                "code,lat,lon,height_km\nAGRD,39.72,43.03,0.0\n",
+                encoding="utf-8",
+            )
+            h5_path.write_text("placeholder", encoding="utf-8")
+
+            model = self._minimal_model()
+            model.tec_receiver_format = "csv"
+            model.tec_receiver_csv = str(csv_path)
+            model.tec_receiver_code = "AGRD"
+            model.tec_orbit_format = "h5"
+            model.tec_orbit_h5 = str(h5_path)
+            model.tec_sat_id = "G17"
+            model.continuity = xr.Dataset(
+                data_vars={
+                    "dNe": (
+                        ["time", "latitude", "longitude", "altitude"],
+                        [[[[0.0]]]],
+                    )
+                },
+                coords={
+                    "time": [0.0],
+                    "latitude": [0.0],
+                    "longitude": [0.0],
+                    "altitude": [100.0],
+                },
+            )
+            expected_dne = model.continuity["dNe"]
+
+            with mock.patch("pyionoseis.model.tec_io.load_receiver_positions_csv") as mocked_csv:
+                with mock.patch("pyionoseis.model.tec_io.load_orbits_hdf5") as mocked_h5:
+                    with mock.patch("pyionoseis.model.tec_tools.compute_los_tec") as mocked_compute:
+                        mocked_csv.return_value = {
+                            "code": "AGRD",
+                            "latitude": 39.72,
+                            "longitude": 43.03,
+                            "height_km": 0.0,
+                        }
+                        mocked_h5.return_value = {
+                            "x_km": [0.0],
+                            "y_km": [0.0],
+                            "z_km": [20200.0],
+                            "time": [0.0],
+                        }
+                        mocked_compute.return_value = xr.Dataset()
+
+                        model.compute_los_tec()
+
+                        kwargs = mocked_compute.call_args.kwargs
+                        xr.testing.assert_identical(kwargs["dNe"], expected_dne)
+
 
 if __name__ == "__main__":
     unittest.main()
