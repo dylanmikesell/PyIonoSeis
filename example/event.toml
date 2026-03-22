@@ -15,6 +15,13 @@ grid_spacing = 1.0  # grid spacing of the model (default: 1.0 degrees)
 grid_units = "degrees"  # units of the grid spacing (degrees/km)
 height_spacing = 50.0  # (km) height grid spacing (default: 20.0)
 
+[rays]
+# Launch inclination (takeoff angle) for infraGA spherical tracing.
+# Convention: 90 deg is vertical upward launch; smaller angles tilt toward horizontal.
+incl_min = 45.0
+incl_max = 90.0
+incl_step = 1.0
+
 [continuity]
 t0_s = 0.0
 tmax_s = 3600.0
