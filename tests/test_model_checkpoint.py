@@ -4,6 +4,7 @@
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -76,6 +77,21 @@ class TestModelCheckpoint(unittest.TestCase):
         )
         model.atmosphere = checkpoint_io.LoadedAtmosphereProfile(atmosphere=atmosphere)
         return model
+
+    def _write_temp_toml(self):
+        """Create a minimal TOML config file and return its path."""
+        content = """
+[model]
+name = "toml-model"
+radius = 100.0
+height = 500.0
+grid_spacing = 1.0
+height_spacing = 20.0
+""".strip()
+        fd, path = tempfile.mkstemp(suffix=".toml")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        return path
 
     @staticmethod
     def _mock_run_sph_trace(command):
@@ -155,6 +171,56 @@ class TestModelCheckpoint(unittest.TestCase):
             restored = Model3D()
             with self.assertRaisesRegex(ValueError, "schema version"):
                 restored.load_checkpoint(checkpoint_dir, allow_migration=False)
+
+    def test_save_checkpoint_toml_initialized_model_pre_ray(self):
+        """TOML-initialized model can save pre-ray checkpoints without AttributeError."""
+        toml_path = self._write_temp_toml()
+        try:
+            model = Model3D(toml_file=toml_path)
+            model.source = _DummySource()
+            model.grid = xr.Dataset(
+                {
+                    "electron_density": (
+                        ("latitude", "longitude", "altitude"),
+                        np.full((self.lat.size, self.lon.size, self.alt.size), 1.0e11),
+                    )
+                },
+                coords={
+                    "latitude": self.lat,
+                    "longitude": self.lon,
+                    "altitude": self.alt,
+                },
+            )
+            atmosphere = xr.Dataset(
+                {
+                    "velocity": (("altitude",), np.full(self.alt.size, 300.0)),
+                    "density": (("altitude",), np.linspace(1.2, 0.9, self.alt.size)),
+                },
+                coords={"altitude": self.alt},
+            )
+            model.atmosphere = checkpoint_io.LoadedAtmosphereProfile(
+                atmosphere=atmosphere
+            )
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                checkpoint_dir = Path(tmpdir) / "ckpt"
+                model.save_checkpoint(checkpoint_dir)
+                self.assertTrue((checkpoint_dir / "checkpoint_manifest.json").exists())
+                self.assertTrue((checkpoint_dir / "grid.nc").exists())
+                self.assertTrue((checkpoint_dir / "atmosphere.nc").exists())
+        finally:
+            Path(toml_path).unlink(missing_ok=True)
+
+    def test_save_checkpoint_toml_initialized_empty_state_raises_value_error(self):
+        """TOML-initialized model without artifacts raises ValueError, not AttributeError."""
+        toml_path = self._write_temp_toml()
+        try:
+            model = Model3D(toml_file=toml_path)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                with self.assertRaisesRegex(ValueError, "No checkpointable artifacts"):
+                    model.save_checkpoint(Path(tmpdir) / "ckpt")
+        finally:
+            Path(toml_path).unlink(missing_ok=True)
 
     @mock.patch(
         "pyionoseis.model.infraga_tools.run_sph_trace",

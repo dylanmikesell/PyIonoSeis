@@ -180,6 +180,13 @@ class Model3D(ModelPlotMixin):
         self.continuity_t0_s = continuity.get("t0_s")
         self.continuity_tmax_s = continuity.get("tmax_s")
         self.continuity_dt_s = continuity.get("dt_s")
+
+        # Runtime state defaults must exist regardless of initialization path.
+        self.source = None
+        self.atmosphere = None
+        self.raypaths = None
+        self.ray_arrivals = None
+        self.raytrace_run_dir = None
         self.continuity = None
 
         tec = data.get("tec", {})
@@ -1291,13 +1298,13 @@ class Model3D(ModelPlotMixin):
         ):
             artifacts["atmosphere"] = self.atmosphere.atmosphere
 
-        if isinstance(self.raypaths, xr.Dataset):
+        if hasattr(self, "raypaths") and isinstance(self.raypaths, xr.Dataset):
             artifacts["raypaths"] = self.raypaths
 
-        if isinstance(self.ray_arrivals, xr.Dataset):
+        if hasattr(self, "ray_arrivals") and isinstance(self.ray_arrivals, xr.Dataset):
             artifacts["ray_arrivals"] = self.ray_arrivals
 
-        if isinstance(self.continuity, xr.Dataset):
+        if hasattr(self, "continuity") and isinstance(self.continuity, xr.Dataset):
             artifacts["continuity"] = self.continuity
 
         return artifacts
